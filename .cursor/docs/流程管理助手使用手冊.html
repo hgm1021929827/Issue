@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>流程管理助手使用手冊</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #5c6670;
+      --line: #d8d0c4;
+      --accent: #1f4e5f;
+      --accent-soft: #e6eef1;
+      --warn: #8a4b12;
+      --warn-bg: #f8eedf;
+      --ok: #1f5c45;
+      --ok-bg: #e7f3ec;
+      --sidebar: #1b3038;
+      --sidebar-text: #e8efe8;
+      --sidebar-muted: #adc0c4;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Iwanami Mincho", "Source Han Serif TC", "Noto Serif TC", "PMingLiU", "Times New Roman", serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.7;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      background: var(--sidebar);
+      color: var(--sidebar-text);
+      padding: 1.6rem 1.2rem 2rem;
+    }
+
+    nav h1 {
+      font-size: 1.05rem;
+      margin: 0 0 0.35rem;
+      letter-spacing: 0.04em;
+    }
+
+    nav p {
+      margin: 0 0 1.2rem;
+      color: var(--sidebar-muted);
+      font-size: 0.82rem;
+    }
+
+    nav a {
+      display: block;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      padding: 0.38rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    nav a:hover,
+    nav a:focus {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    main {
+      max-width: 880px;
+      padding: 2.4rem 2.6rem 4rem;
+    }
+
+    .paper {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 2.2rem 2.4rem 2.6rem;
+      box-shadow: 0 10px 30px rgba(31, 41, 51, 0.05);
+    }
+
+    header.hero h1 {
+      margin: 0 0 0.4rem;
+      font-size: 2rem;
+      color: var(--accent);
+    }
+
+    header.hero p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    h2 {
+      margin: 2.2rem 0 0.8rem;
+      padding-top: 0.4rem;
+      border-top: 1px solid var(--line);
+      font-size: 1.4rem;
+      color: var(--accent);
+    }
+
+    h2:first-of-type { border-top: 0; }
+
+    h3 {
+      margin: 1.4rem 0 0.6rem;
+      font-size: 1.08rem;
+    }
+
+    p { margin: 0.7rem 0; }
+
+    ul, ol { padding-left: 1.3rem; }
+
+    li { margin: 0.28rem 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.9rem 0 1.1rem;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    code, .path {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.88em;
+      background: #eef3f5;
+      padding: 0.08em 0.35em;
+      border-radius: 4px;
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 0.85rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 10px 10px 0;
+    }
+
+    .callout.warn {
+      border-left-color: var(--warn);
+      background: var(--warn-bg);
+    }
+
+    .callout.ok {
+      border-left-color: var(--ok);
+      background: var(--ok-bg);
+    }
+
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      margin: 1rem 0 1.2rem;
+    }
+
+    .step {
+      background: var(--accent);
+      color: #fff;
+      padding: 0.38rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.86rem;
+    }
+
+    .step.optional {
+      background: #6b8790;
+    }
+
+    .arrow {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.7rem;
+      margin: 0.9rem 0 1.2rem;
+    }
+
+    .role {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.75rem 0.85rem;
+      background: #fff;
+    }
+
+    .role h4 {
+      margin: 0 0 0.3rem;
+      color: var(--accent);
+      font-size: 0.98rem;
+    }
+
+    .role p { margin: 0; font-size: 0.9rem; color: var(--muted); }
+
+    footer {
+      margin-top: 2rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: relative; height: auto; }
+      main { padding: 1.2rem; }
+      .paper { padding: 1.3rem; }
+      .roles { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      nav { display: none; }
+      .layout { display: block; }
+      main, .paper { box-shadow: none; border: 0; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="章節目錄">
+      <h1>流程管理助手</h1>
+      <p>給專案主人的操作手冊</p>
+      <a href="#who">1. 這份手冊給誰看</a>
+      <a href="#when">2. 何時喚醒 WFM</a>
+      <a href="#how">3. 在 Cursor 怎麼叫它</a>
+      <a href="#pipeline">4. 敏捷流水線</a>
+      <a href="#duties">5. WFM 三件事</a>
+      <a href="#review">6. 兩種審核與六步驟</a>
+      <a href="#bugs">7. Bug 與溝通路徑</a>
+      <a href="#files">8. 看板與檔案放哪</a>
+      <a href="#kpi">9. 成功標準</a>
+    </nav>
+
+    <main>
+      <article class="paper">
+        <header class="hero">
+          <h1>流程管理助手使用手冊</h1>
+          <p>把 Workflow Manager（WFM）從 AI 角色提示，改寫成你日常可以照著用的操作說明。日常開發不經 WFM 關卡；只有制度爭議、里程碑或你主動要求時才喚醒它。</p>
+        </header>
+
+        <section id="who">
+          <h2>1. 這份手冊給誰看</h2>
+          <p>給<strong>專案主人</strong>看。WFM 是流程治理總監，不是產品經理、也不是工程師。</p>
+          <div class="callout warn">
+            <strong>WFM 不做這些事</strong>
+            不參與產品設計、不撰寫程式、不修改需求、不修改技術設計、不越權介入其他角色的日常工作。
+          </div>
+          <p>本專案是個人 Web 系統，採敏捷協作：各角色直接交接日常交付物。WFM 的目標是建立一套任何 AI 都能依流程穩定運作的制度，而不是卡死每一次交付。</p>
+        </section>
+
+        <section id="when">
+          <h2>2. 何時喚醒 WFM</h2>
+          <p>AI 不會自行定期修改角色提示。WFM <strong>只在下列時機</strong>由你喚醒或介入。</p>
+          <table>
+            <thead>
+              <tr>
+                <th>觸發時機</th>
+                <th>WFM 會做什麼</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>你要求檢視或修訂角色制度</td>
+                <td>審核全部角色 MD，產出《角色審核報告》／《角色改善建議》</td>
+              </tr>
+              <tr>
+                <td>全功能或重要里程碑交付完成</td>
+                <td>交付導向審核：產出《流程審核報告》，確認流水線是否真跑通（含 ② 類 QA 路徑、① 類 Spike）</td>
+              </tr>
+              <tr>
+                <td>QA 完成需求類型 ② 制度驗收</td>
+                <td>可更新《流程審核報告》的「本輪交付完整性」</td>
+              </tr>
+              <tr>
+                <td>首個需求類型 ① Web 功能 QA 結案</td>
+                <td>檢討 Spike、熔斷、看板；可增補《流程改善建議》</td>
+              </tr>
+              <tr>
+                <td>任一角色反映「不屬於我的工作」或「不知道找誰」</td>
+                <td>仲裁職責歸屬，必要時修訂角色 MD</td>
+              </tr>
+              <tr>
+                <td>多次發生規格與程式脫鉤</td>
+                <td>檢查 Bug 熔斷機制、Tech Spike 是否落實</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>何時不要找 WFM</strong>
+            日常寫規格、改設計、寫程式、修一般 Bug、交測試報告，都不需要經過 WFM。各角色直接交接即可。
+          </div>
+        </section>
+
+        <section id="how">
+          <h2>3. 在 Cursor 怎麼叫它</h2>
+          <ol>
+            <li>開一個新對話（或在需要治理的對話裡）。</li>
+            <li>引用 <code>@.cursor/prompts/流程管理助手.md</code>。</li>
+            <li>先講清要哪一種審核：<strong>角色 MD 修訂審核</strong>，或<strong>里程碑交付導向審核</strong>。</li>
+            <li>補上階段名稱、要對照的文件路徑，以及你希望的產出（例如《流程審核報告》）。</li>
+          </ol>
+          <div class="callout ok">
+            <strong>可以這樣說</strong>
+            「@.cursor/prompts/流程管理助手.md 第六階段已完成，請做里程碑交付導向審核，產出《流程審核報告》。」<br>
+            「@.cursor/prompts/流程管理助手.md 有角色說不知道下一關找誰，請仲裁職責並視需要修訂角色 MD。」
+          </div>
+        </section>
+
+        <section id="pipeline">
+          <h2>4. 敏捷流水線</h2>
+          <p>日常交付走這條線。WFM 只在旁邊治理，不擋交接。</p>
+          <div class="pipeline" aria-label="日常流水線">
+            <span class="step">使用者</span><span class="arrow">→</span>
+            <span class="step">PM</span><span class="arrow">→</span>
+            <span class="step">SA</span><span class="arrow">→</span>
+            <span class="step optional">RD Tech Spike</span><span class="arrow">→</span>
+            <span class="step">DA</span><span class="arrow">→</span>
+            <span class="step">RD</span><span class="arrow">→</span>
+            <span class="step">QA</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>需求類型</th>
+                <th>說明</th>
+                <th>RD</th>
+                <th>QA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>① Web 應用</td>
+                <td>含 UI／API，可能有程式交付</td>
+                <td>Spike + 開發</td>
+                <td>功能驗收（QA.md A 路徑）</td>
+              </tr>
+              <tr>
+                <td>② 制度／文件</td>
+                <td>僅 Markdown，無 DB／API／程式</td>
+                <td>本輪無交付項（自然缺席）</td>
+                <td>制度符合性驗收（QA.md B 路徑）</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>② 類沒有程式時，正確路徑是 <strong>DA → QA</strong>，RD 自然缺席，不是跳關。① 類實作 Bug 由 QA 交回 RD；規格 Bug 交 SA。</p>
+          <div class="roles">
+            <div class="role">
+              <h4>PM 需求規劃</h4>
+              <p>整理規格，不設計系統、不寫程式。</p>
+            </div>
+            <div class="role">
+              <h4>SA 系統設計</h4>
+              <p>把規格變成可實作的系統設計。</p>
+            </div>
+            <div class="role">
+              <h4>DA 資料設計</h4>
+              <p>設計資料表與資料規則。</p>
+            </div>
+            <div class="role">
+              <h4>RD 程式開發</h4>
+              <p>① 類做 Spike 與實作；② 類可缺席。</p>
+            </div>
+            <div class="role">
+              <h4>QA 品質驗收</h4>
+              <p>驗收功能或制度符合性，不自行改碼。</p>
+            </div>
+            <div class="role">
+              <h4>WFM 流程治理</h4>
+              <p>只管制度與里程碑，不管日常簽核。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="duties">
+          <h2>5. WFM 三件事</h2>
+          <h3>流程管理</h3>
+          <ul>
+            <li>維護流水線：使用者 → PM → SA →（RD Tech Spike）→ DA → RD → QA</li>
+            <li>維護文件命名與格式一致性</li>
+            <li>仲裁角色越權、職責衝突、不知道下一關找誰</li>
+            <li>定義專案看板最低紀錄欄位</li>
+            <li>里程碑交付導向審核，產出《流程審核報告》</li>
+          </ul>
+          <h3>角色治理</h3>
+          <p>審核全部角色規則：PM.md、SA.md、DA.md、RD.md、QA.md、WFM.md。檢查職責是否明確、權限是否合理、是否重疊或缺漏、是否符合單一職責。</p>
+          <h3>品質治理</h3>
+          <p>只在觸發式審核時，檢查角色 MD 與產出文件格式是否一致、可讀、無衝突。</p>
+          <div class="callout warn">
+            <strong>不要把 WFM 當成簽核關卡</strong>
+            WFM 不逐件審核功能規格書、系統設計書、資料庫設計書、開發完成報告、測試報告，也不核准每一次 Bug 修正。
+          </div>
+        </section>
+
+        <section id="review">
+          <h2>6. 兩種審核與六步驟</h2>
+          <p>喚醒 WFM 後，先判定審核類型，再請它依步驟產出文件。</p>
+          <table>
+            <thead>
+              <tr>
+                <th>類型</th>
+                <th>目的</th>
+                <th>主要產出</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>角色 MD 修訂審核</td>
+                <td>制度寫對了嗎？</td>
+                <td>《角色審核報告》《角色改善建議》</td>
+              </tr>
+              <tr>
+                <td>里程碑交付導向審核</td>
+                <td>照制度跑，真的通嗎？</td>
+                <td>《流程審核報告》</td>
+              </tr>
+            </tbody>
+          </table>
+          <ol>
+            <li>閱讀目前所有角色 MD。</li>
+            <li>分析角色是否權責明確、可執行、不衝突、不重複。</li>
+            <li>依類型產出《角色審核報告.md》或《流程審核報告.md》。里程碑審核要對照 PM→QA 實際執行、② 類 QA 路徑、Spike／熔斷／看板證據。</li>
+            <li>若發現問題，建立《角色改善建議.md》（優先程度 High／Medium／Low）。</li>
+            <li>檢查流水線是否合理，需要時產出《流程改善建議.md》。</li>
+            <li>檢查溝通規則：需求問題 RD／QA → SA → PM；實作 Bug QA → RD；規格 Bug QA → SA；資料設計 DA → SA。</li>
+          </ol>
+          <p>既有範例可見第六階段的《流程審核報告》：<span class="path">.cursor/docs/第六階段－資料環境與試算表匯入/流程管理/</span></p>
+        </section>
+
+        <section id="bugs">
+          <h2>7. Bug 與溝通路徑</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>情況</th>
+                <th>找誰</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>需求問題</td>
+                <td>RD／QA → SA → PM</td>
+              </tr>
+              <tr>
+                <td>規格不符／邏輯矛盾</td>
+                <td>QA → SA</td>
+              </tr>
+              <tr>
+                <td>純實作錯誤／程式崩潰</td>
+                <td>QA → RD（看板至少 CC SA）</td>
+              </tr>
+              <tr>
+                <td>資料設計問題</td>
+                <td>DA → SA</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout warn">
+            <strong>熔斷</strong>
+            實作 Bug 修正不得變更 API 契約、Database Schema、商業邏輯。若必須變更，升級為規格 Bug，改交 SA。
+          </div>
+        </section>
+
+        <section id="files">
+          <h2>8. 看板與檔案放哪</h2>
+          <h3>看板最低欄位</h3>
+          <p>實作類 Bug 直派 RD 時，QA 須在看板建立紀錄，並 CC SA。建議路徑：</p>
+          <p><span class="path">.cursor/docs/第{階段}階段－{功能}/共用資料/第{階段}階段－{功能}－工作進度表.md</span></p>
+          <ul>
+            <li>Bug 編號</li>
+            <li>問題類型（實作類／規格類）</li>
+            <li>分派對象</li>
+            <li>狀態</li>
+            <li>重現步驟摘要</li>
+            <li>CC 對象（實作類至少 CC SA）</li>
+          </ul>
+          <h3>文件存放</h3>
+          <p>功能產出全部使用繁體中文檔名，禁止英文命名。</p>
+          <table>
+            <thead>
+              <tr>
+                <th>類別</th>
+                <th>路徑</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>功能產出</td>
+                <td><span class="path">.cursor/docs/第{階段}階段－{功能}/</span>（依工作內容分層）</td>
+              </tr>
+              <tr>
+                <td>產品改善</td>
+                <td>建立下一個階段目錄，保留前一階段不覆寫</td>
+              </tr>
+              <tr>
+                <td>流程管理</td>
+                <td>對應階段的 <span class="path">流程管理/</span></td>
+              </tr>
+              <tr>
+                <td>歸檔</td>
+                <td>對應階段的 <span class="path">歷史資料/</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p>WFM 可建立的治理文件：流程審核報告、文件品質報告、角色審核報告、角色改善建議、流程改善建議。建議都放在該階段的 <span class="path">流程管理/</span>。</p>
+        </section>
+
+        <section id="kpi">
+          <h2>9. 成功標準</h2>
+          <ul>
+            <li>所有角色皆有明確職責與權限。</li>
+            <li>沒有角色越權。</li>
+            <li>日常交付不經 WFM 關卡仍可順暢運作。</li>
+            <li>衝突時 WFM 能快速仲裁。</li>
+            <li>角色 MD 與實際敏捷流程一致。</li>
+          </ul>
+          <div class="callout ok">
+            <strong>一句話</strong>
+            建立一套穩定、可擴充、可維護、可持續演進的 AI 開發制度，而不是卡死每一次日常交付。
+          </div>
+        </section>
+
+        <footer>
+          依據 <code>.cursor/prompts/流程管理助手.md</code> 與根目錄 <code>AGENTS.md</code> 第 12 節改寫。角色提示本文請以原始 Markdown 為準。
+        </footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>
