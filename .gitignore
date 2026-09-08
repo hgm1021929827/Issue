@@ -1,0 +1,37 @@
+# 專案根目錄本機產物
+/.gradle-*/
+**/.gradle/
+**/.gradle-build/
+**/.tmp/
+
+# 通用建置與測試產物
+**/node_modules/
+**/build/
+**/dist/
+**/out-tsc/
+**/.angular/
+**/coverage/
+**/.next/
+**/.nuxt/
+**/target/
+
+# 開發工具暫存
+**/.classpath
+**/.project
+**/.settings/
+**/bin/
+**/obj/
+*.rd_clean
+*.log
+*.tmp
+
+# 環境與密鑰
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+
+# 作業系統產物
+.DS_Store
+Thumbs.db
