@@ -12,11 +12,11 @@
 
 | 目錄 | 技術 | 說明 |
 |------|------|------|
-| `frontend/` | React（Vite），埠 5173 | SPA；使用者可見文案為繁體中文。畫面視覺依第二階段《視覺設計規格書》，token 在 `frontend/src/styles.css` 的 `:root` |
-| `backend/` | ASP.NET Core 9 API Controller（C#），埠 5080 | JSON API，非 Razor 產品頁 |
-| 資料庫 | MySQL 8，庫名 `issue_tracker` | 表名與欄位 `snake_case`，主鍵 `BIGINT AUTO_INCREMENT` |
+| `frontend/` | React（Vite），埠 5173 | SPA；使用者可見文案為繁體中文。畫面視覺依第二階段《視覺設計規格書》，token 在 `frontend/src/styles.css` 的 `:root`。API 位址開發預設 `http://localhost:5080`；發佈後讀 `web/config.js` 的 `apiBase` |
+| `backend/` | ASP.NET Core 9 API Controller（C#），埠 5080 | JSON API，非 Razor 產品頁。CORS 允許 `localhost`／`127.0.0.1` 任意埠，另可由 `Cors:Origins` 加網址（IIS 畫面如 `http://localhost:81`） |
+| 資料庫 | MySQL 8 或 SQL Server，庫名 `issue_tracker` | 由 `Database:Provider`（`MySql`／`SqlServer`）切換；表名與欄位 `snake_case`；主鍵 MySQL 為 `BIGINT AUTO_INCREMENT`、SQL Server 為 `BIGINT IDENTITY`。`Publish:Root`、`Publish:ApiBaseUrl` 僅供 [`發佈.bat`](發佈.bat) 使用 |
 
-啟動：先改 `backend/appsettings.json` 連線字串，再 `dotnet run --project backend --launch-profile http`，另開終端 `cd frontend && npm start`。API 契約見第一階段《系統設計書》第四章。統一回應 `{ "code", "message", "data" }`，前端判斷 `code === 200`。
+啟動：先改 `backend/appsettings.json` 的 `Database:Provider` 與對應連線字串，再 `dotnet run --project backend --launch-profile http`，另開終端 `cd frontend && npm start`。API 契約見第一階段《系統設計書》第四章。統一回應 `{ "code", "message", "data" }`，前端判斷 `code === 200`。
 
 角色提示（`.cursor/prompts/`）裡出現的 `category` 與 Java Entity 範例，僅為**文件格式示範**。C# 實體使用 **PascalCase**，並做 snake_case ↔ PascalCase 對應。
 
@@ -27,7 +27,7 @@
 ## 2. 資料慣例
 
 - 表名、欄位：**snake_case**（如 `issue_id`）
-- 主鍵：`BIGINT AUTO_INCREMENT`
+- 主鍵：MySQL 為 `BIGINT AUTO_INCREMENT`；SQL Server 為 `BIGINT IDENTITY`（由 `Database:Provider` 決定）
 - C# 實體屬性：**PascalCase**（如 `IssueId`），對應資料庫 underscore
 - 若日後改棧，須修訂本節與相關角色提示中的對齊說明
 

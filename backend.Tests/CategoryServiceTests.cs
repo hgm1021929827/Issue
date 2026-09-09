@@ -57,13 +57,13 @@ public class CategoryServiceTests
         Assert.Contains("預約", names);
         Assert.Contains("議題", names);
         Assert.DoesNotContain("議題分類", names);
-        Assert.Equal(4, db.SubCategories.Count(x => x.MajorCategoryId == 3));
+        Assert.Equal(0, db.SubCategories.Count(x => x.MajorCategoryId == 3));
         var issueMajorId = db.MajorCategories.Single(x => x.CategoryName == "議題").MajorCategoryId;
         Assert.Equal(3, db.SubCategories.Count(x => x.MajorCategoryId == issueMajorId));
     }
 
     [Fact]
-    public void Seed_creates_default_majors_when_empty()
+    public void Seed_creates_issue_major_when_empty()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -71,11 +71,34 @@ public class CategoryServiceTests
         using var db = new AppDbContext(options);
         DbSeeder.Seed(db);
         var majors = db.MajorCategories.OrderBy(x => x.SortOrder).Select(x => x.CategoryName).ToList();
-        Assert.Equal(["預約", "議題"], majors);
-        Assert.Equal(7, db.SubCategories.Count());
+        Assert.Equal(["議題"], majors);
+        Assert.Equal(3, db.SubCategories.Count());
         Assert.Contains(db.SubCategories, x => x.SubCategoryName == "處理中");
         Assert.Contains(db.SubCategories, x => x.SubCategoryName == "加簽");
         Assert.Contains(db.SubCategories, x => x.SubCategoryName == "已結案");
+        Assert.DoesNotContain(db.MajorCategories, x => x.CategoryName == "預約");
+    }
+
+    [Fact]
+    public void Seed_adds_missing_issue_when_other_majors_exist()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        using var db = new AppDbContext(options);
+        db.MajorCategories.Add(new MajorCategory
+        {
+            CategoryName = "自訂",
+            ColorHex = "#8FA8C8",
+            SortOrder = 1
+        });
+        db.SaveChanges();
+        DbSeeder.Seed(db);
+        Assert.Contains(db.MajorCategories, x => x.CategoryName == "自訂");
+        Assert.Contains(db.MajorCategories, x => x.CategoryName == "議題");
+        Assert.DoesNotContain(db.MajorCategories, x => x.CategoryName == "預約");
+        var issueMajorId = db.MajorCategories.Single(x => x.CategoryName == "議題").MajorCategoryId;
+        Assert.Equal(3, db.SubCategories.Count(x => x.MajorCategoryId == issueMajorId));
     }
 
     [Fact]

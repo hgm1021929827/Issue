@@ -230,10 +230,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.IsCompleted, x.CreatedAt });
             e.HasIndex(x => x.CompanyMemberId);
             e.HasIndex(x => x.ClientContactId);
-            e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Cascade);
+            // SQL Server 不允許多條 CASCADE 路徑；刪除由服務層先清 TrackTodo
+            e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.CompanyMember).WithMany().HasForeignKey(x => x.CompanyMemberId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.ClientContact).WithMany().HasForeignKey(x => x.ClientContactId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -273,8 +274,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Remark).HasColumnName("remark").HasMaxLength(2000).IsRequired();
             e.HasIndex(x => new { x.ProjectWorkItemId, x.WorkDate }).IsUnique();
             e.HasIndex(x => new { x.ProjectIssueId, x.WorkDate }).IsUnique();
-            e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Cascade);
+            // SQL Server：避免經 project → work_item／issue 再進 work_hour 的多重 CASCADE
+            e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

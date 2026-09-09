@@ -101,7 +101,7 @@ if "!BE_UP!"=="1" if "!FE_UP!"=="1" (
   goto eof_ok
 )
 
-call :mysql_hint
+call :db_hint
 
 if "!BE_UP!"=="1" (
   echo 後端已在埠 %BACKEND_PORT% 執行，略過。
@@ -186,11 +186,29 @@ call :port_listening %FRONTEND_PORT%
 if "!LISTENING!"=="1" (echo   前端  %FRONTEND_URL%    [執行中]) else (echo   前端  %FRONTEND_URL%    [未啟動])
 goto :eof
 
-:mysql_hint
-call :port_listening 3306
-if "!LISTENING!"=="0" (
-  echo 注意：未偵測到 MySQL 埠 3306。若資料庫未啟動，後端連線可能失敗。
+:db_hint
+set "DB_PROVIDER="
+if exist "backend\appsettings.json" (
+  for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "try { $j = Get-Content -LiteralPath '%~dp0backend\appsettings.json' -Raw -Encoding UTF8 | ConvertFrom-Json; Write-Output ([string]$j.Database.Provider).Trim() } catch { }"`) do set "DB_PROVIDER=%%i"
+)
+if /i "!DB_PROVIDER!"=="MySql" (
+  call :port_listening 3306
+  if "!LISTENING!"=="0" (
+    echo 注意：Database:Provider=MySql，但未偵測到埠 3306。若 MySQL 未啟動，後端連線可能失敗。
+    echo.
+  )
+) else if /i "!DB_PROVIDER!"=="SqlServer" (
+  echo 提示：Database:Provider=SqlServer，請確認 SQL Server（如 .\SQLEXPRESS）已啟動。
   echo.
+) else if defined DB_PROVIDER (
+  echo 注意：Database:Provider=!DB_PROVIDER!（預期為 SqlServer 或 MySql）。
+  echo.
+) else (
+  call :port_listening 3306
+  if "!LISTENING!"=="0" (
+    echo 注意：無法讀取 Database:Provider；亦未偵測到 MySQL 埠 3306。
+    echo.
+  )
 )
 goto :eof
 

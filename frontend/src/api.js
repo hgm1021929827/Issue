@@ -1,4 +1,16 @@
-const BASE = "http://localhost:5080";
+function resolveApiBase() {
+  const runtime = typeof window !== "undefined" ? window.__ISSUE_CONFIG__?.apiBase : undefined;
+  if (typeof runtime === "string") {
+    return runtime.replace(/\/$/, "");
+  }
+  const env = import.meta.env.VITE_API_BASE;
+  if (typeof env === "string" && env.length > 0) {
+    return env.replace(/\/$/, "");
+  }
+  return "http://localhost:5080";
+}
+
+const BASE = resolveApiBase();
 
 async function request(path, options = {}) {
   const response = await fetch(`${BASE}${path}`, {

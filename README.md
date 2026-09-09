@@ -8,17 +8,38 @@
 |------|------|------|
 | 前端 | React（Vite） | `frontend/` |
 | 後端 | ASP.NET Core 9（JSON API） | `backend/` |
-| 資料庫 | MySQL 8 | 庫名 `issue_tracker` |
+| 資料庫 | MySQL 8 或 SQL Server | 庫名 `issue_tracker`；由 `Database:Provider` 切換 |
 
 ## 本機啟動
 
-1. 確認 MySQL 服務已啟動，並依本機帳密修改 [`backend/appsettings.json`](backend/appsettings.json) 的 `ConnectionStrings:Default`（預設 `root/root`）。
+1. 編輯 [`backend/appsettings.json`](backend/appsettings.json)：
+   - `Database:Provider`：`SqlServer` 或 `MySql`
+   - 對應連線字串：`ConnectionStrings:SqlServer` 或 `ConnectionStrings:MySql`
 2. 後端：`dotnet run --project backend --launch-profile http` → `http://localhost:5080`
 3. 前端：`cd frontend` → `npm start` → `http://localhost:5173`
 
-空庫首次啟動後端會 `EnsureCreated` 建表並寫入兩個預設大分類（預約、議題）。「預約」底下有範例小分類；「議題」底下有「處理中」「加簽」「已結案」。之後可在分類設定自行增刪改名。
+亦可雙擊 [`網站.bat`](網站.bat) 啟動／停止本機前後端。
+
+空庫首次啟動後端會 `EnsureCreated` 建表，並補齊大分類「議題」與小分類「處理中」「加簽」「已結案」。之後可在分類設定自行增刪改名。不會自動建立「預約」。
 
 單元測試：`dotnet test`
+
+## 發佈（IIS 等）
+
+1. 在 [`backend/appsettings.json`](backend/appsettings.json) 設定：
+   - `Publish:Root`：發佈根目錄（相對專案根目錄或絕對路徑）
+   - `Publish:ApiBaseUrl`：前端要呼叫的 API 網址（須與 IIS 上的 API 網站一致，例如 `http://localhost:5080`）
+   - `Cors:Origins`：畫面網址（`localhost`／`127.0.0.1` 任意埠已自動允許；用電腦名稱或區網 IP 再開畫面時再加）
+   - 目標庫的 `Database:Provider` 與連線字串
+2. 雙擊或執行 [`發佈.bat`](發佈.bat)。
+3. 產出：
+   - `%Publish.Root%\api` — 後端 API（`dotnet publish`）
+   - `%Publish.Root%\web` — 前端靜態檔（`npm run build`）；內含 `config.js` 的 `apiBase`
+4. 發佈結束前會對 `api\appsettings.json` 的連線執行 `--ensure-db`（建表／補 schema／補「議題」初始資料）。
+
+IIS 請分成兩個網站：`web` 靜態檔（例如 `http://localhost:81`）、`api` ASP.NET Core（網址必須等於 `Publish:ApiBaseUrl`）。之後若只改 API 網址，可直接改 `web\config.js` 的 `apiBase`，不必重編前端。
+
+`Publish:Root` 與 `Publish:ApiBaseUrl` 僅供發佈腳本使用，API 執行期會忽略。CORS 則讀 `Cors:Origins`。
 
 ## 目錄
 
