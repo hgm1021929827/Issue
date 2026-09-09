@@ -50,7 +50,7 @@ public class CategoryService(AppDbContext db)
         db.MajorCategories.Add(new Entities.MajorCategory
         {
             CategoryName = name,
-            ColorHex = "#8FA8C8",
+            ColorHex = ColorPresets.Default,
             SortOrder = maxSort + 1
         });
         await db.SaveChangesAsync();
@@ -160,7 +160,7 @@ public class CategoryService(AppDbContext db)
             {
                 throw new AppException(400, "顏色必須是 10 個備選色之一");
             }
-            return "#8FA8C8";
+            return ColorPresets.Default;
         }
         if (!ColorPresets.IsAllowed(color))
         {

@@ -19,7 +19,7 @@ public class DirectoryServiceTests
         {
             MajorCategoryId = 1,
             CategoryName = "議題分類",
-            ColorHex = "#8FA8C8",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.SaveChanges();
@@ -153,7 +153,7 @@ public class ProjectVendorTests
         {
             MajorCategoryId = 1,
             CategoryName = "議題分類",
-            ColorHex = "#8FA8C8",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.ClientCompanies.Add(new ClientCompany

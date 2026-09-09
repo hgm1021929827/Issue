@@ -323,7 +323,7 @@ public class IssueService(AppDbContext db)
     private static string DisplayColor(IssueItem x)
     {
         var hex = x.SubCategory?.ColorHex;
-        return ColorPresets.IsAllowed(hex) ? ColorPresets.Normalize(hex!) : "#8FA8C8";
+        return ColorPresets.MapOrDefault(hex);
     }
 
     private static IssueCalendarItemDto ToCalendarItem(IssueItem x, DateOnly date, string kind, long? planId)
@@ -485,7 +485,7 @@ public class IssueService(AppDbContext db)
     }
 
     private static string DisplayColorHex(string? hex) =>
-        ColorPresets.IsAllowed(hex) ? ColorPresets.Normalize(hex!) : "#8FA8C8";
+        ColorPresets.MapOrDefault(hex);
 
     private static IssueDto ToDto(IssueItem x) => new()
     {
