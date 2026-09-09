@@ -50,8 +50,15 @@ export const api = {
   updateSub: (id, payload) => request(`/subCategories/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   deleteSub: (id) => request(`/subCategories/${id}`, { method: "DELETE" }),
   colorPresets: () => request("/colorPresets"),
-  issues: (majorCategoryId) =>
-    request(majorCategoryId ? `/issues?majorCategoryId=${majorCategoryId}` : "/issues"),
+  issues: ({ majorCategoryId, subCategoryId, clientCompanyId, q } = {}) => {
+    const params = new URLSearchParams();
+    if (majorCategoryId) params.set("majorCategoryId", String(majorCategoryId));
+    if (subCategoryId) params.set("subCategoryId", String(subCategoryId));
+    if (clientCompanyId) params.set("clientCompanyId", String(clientCompanyId));
+    if (q) params.set("q", q);
+    const suffix = params.toString() ? `?${params}` : "";
+    return request(`/issues${suffix}`);
+  },
   calendar: (year, month) => request(`/issues/calendar?year=${year}&month=${month}`),
   addPlan: (id, date) => request(`/issues/${id}/plans`, { method: "POST", body: JSON.stringify({ date }) }),
   addPlans: (id, dates) => request(`/issues/${id}/plans`, { method: "POST", body: JSON.stringify({ dates }) }),

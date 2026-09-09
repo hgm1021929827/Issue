@@ -8,12 +8,32 @@ namespace Issue.Api.Services;
 
 public class IssueService(AppDbContext db)
 {
-    public async Task<List<IssueDto>> ListAsync(long? majorCategoryId)
+    public async Task<List<IssueDto>> ListAsync(
+        long? majorCategoryId,
+        long? subCategoryId = null,
+        long? clientCompanyId = null,
+        string? q = null)
     {
         var query = db.Issues.Include(x => x.MajorCategory).Include(x => x.SubCategory).Include(x => x.ClientCompany).AsQueryable();
         if (majorCategoryId is not null)
         {
             query = query.Where(x => x.MajorCategoryId == majorCategoryId);
+        }
+        if (subCategoryId is not null)
+        {
+            query = query.Where(x => x.SubCategoryId == subCategoryId);
+        }
+        if (clientCompanyId is not null)
+        {
+            query = query.Where(x => x.ClientCompanyId == clientCompanyId);
+        }
+        var key = (q ?? "").Trim();
+        if (key.Length > 0)
+        {
+            var lower = key.ToLower();
+            query = query.Where(x =>
+                x.IssueNo.ToLower().Contains(lower)
+                || x.Title.ToLower().Contains(lower));
         }
         var rows = await query.OrderByDescending(x => x.UpdatedAt).ToListAsync();
         return rows.Select(ToDto).ToList();

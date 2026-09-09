@@ -8,8 +8,12 @@ namespace Issue.Api.Controllers;
 public class IssuesController(IssueService issues, TodoService todos, TrackTodoService tracks) : ApiControllerBase
 {
     [HttpGet("/issues")]
-    public async Task<IActionResult> List([FromQuery] long? majorCategoryId) =>
-        OkData(await issues.ListAsync(majorCategoryId));
+    public async Task<IActionResult> List(
+        [FromQuery] long? majorCategoryId,
+        [FromQuery] long? subCategoryId,
+        [FromQuery] long? clientCompanyId,
+        [FromQuery] string? q) =>
+        OkData(await issues.ListAsync(majorCategoryId, subCategoryId, clientCompanyId, q));
 
     [HttpGet("/issues/calendar")]
     public async Task<IActionResult> Calendar([FromQuery] int year, [FromQuery] int month) =>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ClipboardList, FileSpreadsheet, Plus, Sparkles } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Plus, Search, Sparkles } from "lucide-react";
 import { api } from "../api.js";
+import AppSelect from "../components/AppSelect.jsx";
 import PageTitle from "../components/PageTitle.jsx";
 import ImportIssueDialog from "../components/ImportIssueDialog.jsx";
 
@@ -18,24 +19,41 @@ function dueClass(dueDate) {
 }
 
 export default function IssueListPage() {
-  const [majors, setMajors] = useState([]);
+  const [subs, setSubs] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [filter, setFilter] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [appliedKeyword, setAppliedKeyword] = useState("");
   const [issues, setIssues] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [askImport, setAskImport] = useState(false);
   const navigate = useNavigate();
 
-  const load = async () => {
+  const applySearch = () => setAppliedKeyword(keyword.trim());
+  const hasFilter = Boolean(filter || vendorId || appliedKeyword);
+
+  const loadMeta = async () => {
+    const [majorList, companyList] = await Promise.all([
+      api.majorCategories(),
+      api.clientCompanies()
+    ]);
+    const issueMajor = majorList.find((m) => m.name === "議題")
+      || majorList.find((m) => m.name === "議題分類");
+    setSubs(issueMajor ? await api.subCategories(issueMajor.id) : []);
+    setCompanies(companyList);
+  };
+
+  const loadIssues = async () => {
     setError("");
     setLoading(true);
     try {
-      const [majorList, list] = await Promise.all([
-        api.majorCategories(),
-        api.issues(filter || undefined)
-      ]);
-      setMajors(majorList);
-      setIssues(list);
+      setIssues(await api.issues({
+        subCategoryId: filter || undefined,
+        clientCompanyId: vendorId || undefined,
+        q: appliedKeyword || undefined
+      }));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -44,8 +62,12 @@ export default function IssueListPage() {
   };
 
   useEffect(() => {
-    load();
-  }, [filter]);
+    loadMeta().catch((err) => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    loadIssues();
+  }, [filter, vendorId, appliedKeyword]);
 
   return (
     <div>
@@ -67,25 +89,58 @@ export default function IssueListPage() {
         <button className={!filter ? "chip active" : "chip"} type="button" onClick={() => setFilter("")}>
           全部
         </button>
-        {majors.map((m) => (
+        {subs.map((s) => (
           <button
-            key={m.id}
+            key={s.id}
             type="button"
-            className={String(filter) === String(m.id) ? "chip active" : "chip"}
-            onClick={() => setFilter(m.id)}
+            className={String(filter) === String(s.id) ? "chip active" : "chip"}
+            onClick={() => setFilter(s.id)}
           >
-            {m.name}
+            {s.name}
           </button>
         ))}
+      </div>
+      <div className="issue-list-tools">
+        <AppSelect
+          value={vendorId}
+          placeholder="全部廠商"
+          searchable
+          searchPlaceholder="搜尋廠商"
+          options={[
+            { value: "", label: "全部廠商" },
+            ...companies.map((c) => ({ value: c.id, label: c.name }))
+          ]}
+          onChange={setVendorId}
+        />
+        <input
+          type="search"
+          placeholder="搜尋編號或標題"
+          value={keyword}
+          aria-label="搜尋編號或標題"
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") applySearch();
+          }}
+        />
+        <button type="button" className="btn" onClick={applySearch}>
+          <Search size={16} strokeWidth={1.75} aria-hidden="true" />
+          搜尋
+        </button>
       </div>
       {loading && <p className="muted">載入中…</p>}
       {!loading && issues.length === 0 && (
         <div className="empty">
           <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />
-          <p>尚無議題。</p>
-          <Link className="btn" to="/issues/new">
-            立即新增
-          </Link>
+          {hasFilter ? (
+            <p>沒有符合的議題。</p>
+          ) : (
+            <>
+              <p>尚無議題。</p>
+              <Link className="btn" to="/issues/new">
+                立即新增
+              </Link>
+            </>
+          )}
         </div>
       )}
       <ul className="issue-list">

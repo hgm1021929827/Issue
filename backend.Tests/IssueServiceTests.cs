@@ -120,6 +120,119 @@ public class IssueServiceTests
     }
 
     [Fact]
+    public async Task List_filters_by_subCategoryId()
+    {
+        await using var db = CreateDb();
+        db.SubCategories.AddRange(
+            new SubCategory
+            {
+                SubCategoryId = 10,
+                MajorCategoryId = 1,
+                SubCategoryName = "處理中",
+                ColorHex = "#7EB8D8",
+                SortOrder = 1
+            },
+            new SubCategory
+            {
+                SubCategoryId = 11,
+                MajorCategoryId = 1,
+                SubCategoryName = "已結案",
+                ColorHex = "#6BB3A8",
+                SortOrder = 2
+            });
+        var now = DateTime.Now;
+        db.Issues.AddRange(
+            new IssueItem
+            {
+                IssueId = 2,
+                IssueNo = "2",
+                Title = "處理中單",
+                Content = "",
+                MajorCategoryId = 1,
+                SubCategoryId = 10,
+                CreatedAt = now,
+                UpdatedAt = now
+            },
+            new IssueItem
+            {
+                IssueId = 3,
+                IssueNo = "3",
+                Title = "已結案單",
+                Content = "",
+                MajorCategoryId = 1,
+                SubCategoryId = 11,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        db.SaveChanges();
+        var svc = new IssueService(db);
+
+        var all = await svc.ListAsync(null);
+        Assert.Equal(3, all.Count);
+
+        var inProgress = await svc.ListAsync(null, 10);
+        var row = Assert.Single(inProgress);
+        Assert.Equal("2", row.IssueNo);
+
+        var unknown = await svc.ListAsync(null, 999);
+        Assert.Empty(unknown);
+    }
+
+    [Fact]
+    public async Task List_filters_by_vendor_and_search()
+    {
+        await using var db = CreateDb();
+        db.ClientCompanies.Add(new ClientCompany
+        {
+            ClientCompanyId = 2,
+            CompanyName = "另一家",
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        });
+        var now = DateTime.Now;
+        db.Issues.AddRange(
+            new IssueItem
+            {
+                IssueId = 2,
+                IssueNo = "TP-AA",
+                Title = "連線問題",
+                Content = "",
+                MajorCategoryId = 1,
+                ClientCompanyId = 1,
+                CreatedAt = now,
+                UpdatedAt = now
+            },
+            new IssueItem
+            {
+                IssueId = 3,
+                IssueNo = "TP-BB",
+                Title = "報表調整",
+                Content = "",
+                MajorCategoryId = 1,
+                ClientCompanyId = 2,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        db.SaveChanges();
+        var svc = new IssueService(db);
+
+        var vendor = await svc.ListAsync(null, null, 1);
+        var vendorRow = Assert.Single(vendor);
+        Assert.Equal("TP-AA", vendorRow.IssueNo);
+
+        var byTitle = await svc.ListAsync(null, null, null, "連線問題");
+        var titleRow = Assert.Single(byTitle);
+        Assert.Equal("TP-AA", titleRow.IssueNo);
+
+        var byNo = await svc.ListAsync(null, null, null, "tp-bb");
+        var noRow = Assert.Single(byNo);
+        Assert.Equal("TP-BB", noRow.IssueNo);
+
+        var both = await svc.ListAsync(null, null, 2, "連線問題");
+        Assert.Empty(both);
+    }
+
+    [Fact]
     public async Task Create_rejects_duplicate_issue_no()
     {
         await using var db = CreateDb();

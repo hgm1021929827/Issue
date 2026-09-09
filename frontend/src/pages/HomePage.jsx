@@ -111,7 +111,7 @@ export default function HomePage() {
       const [majorList, projectList, issueList, trackList] = await Promise.all([
         api.majorCategories(),
         api.projects(filter || undefined),
-        api.issues(filter || undefined),
+        api.issues({ majorCategoryId: filter || undefined }),
         api.homeTrackTodos()
       ]);
       const nested = await Promise.all(
