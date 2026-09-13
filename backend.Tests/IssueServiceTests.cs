@@ -19,7 +19,7 @@ public class IssueServiceTests
         {
             MajorCategoryId = 1,
             CategoryName = "議題分類",
-            ColorHex = "#8FA8C8",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.ClientCompanies.Add(new ClientCompany
@@ -129,7 +129,7 @@ public class IssueServiceTests
                 SubCategoryId = 10,
                 MajorCategoryId = 1,
                 SubCategoryName = "處理中",
-                ColorHex = "#7EB8D8",
+                ColorHex = "#A9D6E8",
                 SortOrder = 1
             },
             new SubCategory
@@ -137,7 +137,7 @@ public class IssueServiceTests
                 SubCategoryId = 11,
                 MajorCategoryId = 1,
                 SubCategoryName = "已結案",
-                ColorHex = "#6BB3A8",
+                ColorHex = "#A8D8CF",
                 SortOrder = 2
             });
         var now = DateTime.Now;

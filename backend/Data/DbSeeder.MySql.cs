@@ -14,7 +14,7 @@ public static partial class DbSeeder
                             AND COLUMN_NAME = 'color_hex'
                         );
                         SET @sql := IF(@exists = 0,
-                          'ALTER TABLE `sub_category` ADD COLUMN `color_hex` VARCHAR(7) NOT NULL DEFAULT ''#8FA8C8''',
+                          'ALTER TABLE `sub_category` ADD COLUMN `color_hex` VARCHAR(7) NOT NULL DEFAULT ''#91BFD5''',
                           'SELECT 1');
                         PREPARE stmt FROM @sql;
                         EXECUTE stmt;

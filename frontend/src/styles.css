@@ -17,9 +17,9 @@
   --pastel-peach: #f0d4b8;
   --pastel-pink: #e8c5c8;
   --pastel-purple: #d4c8e0;
-  --danger: #e8c5c8;
-  --danger-hover: #dfb4b8;
-  --danger-ink: #8a5558;
+  --danger: #e0b4b8;
+  --danger-hover: #d6a4a9;
+  --danger-ink: #7a4548;
   --shadow: 0 4px 16px rgba(167, 148, 128, 0.08);
   --shadow-blue: 0 4px 16px rgba(154, 176, 196, 0.12);
   --radius-card: 2rem;
@@ -319,6 +319,7 @@ button:hover {
 .btn.danger {
   background: var(--danger);
   color: var(--danger-ink);
+  border-color: color-mix(in srgb, var(--danger-ink) 28%, #fff);
 }
 
 .btn.danger:hover { background: var(--danger-hover); }
@@ -348,6 +349,23 @@ button:hover {
 
 .member-tabs + .filters {
   margin-top: 0;
+}
+
+.project-tab-bar {
+  align-items: center;
+  margin: 0 0 1rem;
+  gap: 0.75rem;
+}
+
+.project-tab-bar .member-tabs,
+.project-tab-bar .filters {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.project-tab-bar > .btn {
+  flex-shrink: 0;
 }
 
 .chip {
@@ -393,7 +411,7 @@ button:hover {
 .issue-row > .todo-icon-btn.danger {
   background: transparent;
   border-color: transparent;
-  color: #c45c5c;
+  color: var(--danger-ink);
 }
 
 .issue-row > .todo-icon-btn.danger:hover {
@@ -898,6 +916,11 @@ select {
   font-family: inherit;
 }
 
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):focus,
 textarea:focus,
 select:focus {
@@ -922,31 +945,31 @@ input[type="checkbox"] {
 
 input:disabled:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
 textarea:disabled,
-select:disabled {
+select:disabled,
+input:read-only:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+textarea:read-only {
   color: var(--ink-deep);
   -webkit-text-fill-color: var(--ink-deep);
-  background: color-mix(in srgb, var(--accent-soft) 48%, #fff);
+  background: color-mix(in srgb, var(--accent-soft) 78%, #fff);
+  border-color: var(--line-blue);
   cursor: default;
   opacity: 1;
+}
+
+input:disabled:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):focus,
+textarea:disabled:focus,
+select:disabled:focus,
+input:read-only:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):focus,
+textarea:read-only:focus {
+  box-shadow: none;
+  border-color: var(--line-blue);
+  background: color-mix(in srgb, var(--accent-soft) 78%, #fff);
 }
 
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
 
 .two-col.issue-meta-fields {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-input:read-only:not([type="radio"]):not([type="checkbox"]),
-textarea:read-only {
-  background: color-mix(in srgb, var(--accent-soft) 48%, #fff);
-  color: var(--ink-deep);
-  cursor: default;
-}
-
-input:read-only:not([type="radio"]):not([type="checkbox"]):focus,
-textarea:read-only:focus {
-  box-shadow: none;
-  border-color: var(--line-blue);
 }
 .btn-row { display: flex; gap: 0.5rem; align-items: center; }
 
@@ -1303,10 +1326,17 @@ textarea:read-only:focus {
   padding: 0;
   flex-shrink: 0;
   cursor: pointer;
-  background: color-mix(in srgb, var(--chip-color, var(--accent)) 62%, #fff);
+  background: color-mix(in srgb, var(--chip-color, var(--accent)) 88%, #fff);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.color-dot.selected { border-color: var(--ink); }
+.color-dot.selected {
+  transform: scale(1.18);
+  border-color: #fff;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--chip-color, var(--accent)) 55%, var(--line)),
+    0 3px 10px color-mix(in srgb, var(--chip-color, var(--accent)) 28%, transparent);
+}
 
 .sub-item .color-row { margin: 0.35rem 0 0; }
 
@@ -1335,6 +1365,19 @@ textarea:read-only:focus {
   color: var(--ink-deep);
   -webkit-text-fill-color: var(--ink-deep);
   cursor: default;
+  background-color: color-mix(in srgb, var(--accent-soft) 78%, #fff);
+  border-color: var(--line-blue);
+}
+
+.app-select.is-disabled .app-select-trigger:hover,
+.app-date.is-disabled .app-date-trigger:hover {
+  background-color: color-mix(in srgb, var(--accent-soft) 78%, #fff);
+}
+
+.app-select.is-disabled.is-color .app-select-trigger,
+.app-select.is-disabled.is-color .app-select-trigger:hover {
+  background-color: color-mix(in srgb, var(--select-color, var(--accent)) 28%, color-mix(in srgb, var(--accent-soft) 70%, #fff));
+  border-color: var(--line-blue);
 }
 
 .app-select.is-color .app-select-trigger {
@@ -1855,6 +1898,8 @@ textarea:read-only:focus {
 }
 
 .todo-icon-btn:hover { background: var(--accent-soft); color: var(--ink); }
+
+.todo-icon-btn.danger { color: var(--danger-ink); }
 
 .todo-icon-btn.danger:hover { background: color-mix(in srgb, var(--pastel-pink) 55%, #fff); color: var(--danger-ink); }
 

@@ -11,6 +11,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { CheckSquare, GripVertical, Plus, Sparkles, Trash2 } from "lucide-react";
 import { api } from "../api.js";
 import AppDialog from "./AppDialog.jsx";
+import AppTextarea from "./AppTextarea.jsx";
 
 function GripIcon() {
   return <GripVertical size={14} strokeWidth={1.75} aria-hidden="true" />;
@@ -280,7 +281,7 @@ export default function TodoTree({ issueId, nodes, onChange, onError }) {
           </label>
           <label>
             內容
-            <textarea
+            <AppTextarea
               rows={8}
               value={draft.content}
               placeholder="寫下這項工作的說明…"

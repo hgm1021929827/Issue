@@ -18,14 +18,14 @@ public class IssueImportTests
             .Options;
         var db = new AppDbContext(options);
         var now = DateTime.Now;
-        db.MajorCategories.Add(new MajorCategory { MajorCategoryId = 1, CategoryName = "議題", ColorHex = "#8FA8C8", SortOrder = 1 });
+        db.MajorCategories.Add(new MajorCategory { MajorCategoryId = 1, CategoryName = "議題", ColorHex = "#91BFD5", SortOrder = 1 });
         db.SubCategories.AddRange(
             new SubCategory
             {
                 SubCategoryId = 10,
                 MajorCategoryId = 1,
                 SubCategoryName = "處理中",
-                ColorHex = "#7EB8D8",
+                ColorHex = "#A9D6E8",
                 SortOrder = 1
             },
             new SubCategory
@@ -33,7 +33,7 @@ public class IssueImportTests
                 SubCategoryId = 11,
                 MajorCategoryId = 1,
                 SubCategoryName = "已結案",
-                ColorHex = "#6BB3A8",
+                ColorHex = "#A8D8CF",
                 SortOrder = 2
             },
             new SubCategory
@@ -41,7 +41,7 @@ public class IssueImportTests
                 SubCategoryId = 12,
                 MajorCategoryId = 1,
                 SubCategoryName = "加簽",
-                ColorHex = "#E0A86B",
+                ColorHex = "#EBC5A5",
                 SortOrder = 3
             });
         db.ClientCompanies.Add(new ClientCompany
@@ -331,13 +331,13 @@ public class IssueImportTests
         var unknown = await Assert.ThrowsAsync<AppException>(() =>
             Service(db).ImportAsync(HtmlFile(html), 1, 10, 12, 999));
         Assert.Equal("請選擇處理中、加簽與已結案小分類", unknown.Message);
-        db.MajorCategories.Add(new MajorCategory { MajorCategoryId = 2, CategoryName = "預約", ColorHex = "#8FA8C8", SortOrder = 2 });
+        db.MajorCategories.Add(new MajorCategory { MajorCategoryId = 2, CategoryName = "預約", ColorHex = "#91BFD5", SortOrder = 2 });
         db.SubCategories.Add(new SubCategory
         {
             SubCategoryId = 20,
             MajorCategoryId = 2,
             SubCategoryName = "已發信",
-            ColorHex = "#7EB8D8",
+            ColorHex = "#A9D6E8",
             SortOrder = 1
         });
         await db.SaveChangesAsync();

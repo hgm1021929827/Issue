@@ -7,7 +7,7 @@ public static partial class DbSeeder
     static void EnsureSchemaSqlServer(AppDbContext db)
     {
         SqlAddColumnIfMissing(db, "sub_category", "color_hex",
-            "ALTER TABLE [sub_category] ADD [color_hex] NVARCHAR(7) NOT NULL CONSTRAINT DF_sub_category_color_hex DEFAULT N'#8FA8C8'");
+            "ALTER TABLE [sub_category] ADD [color_hex] NVARCHAR(7) NOT NULL CONSTRAINT DF_sub_category_color_hex DEFAULT N'#91BFD5'");
         SqlAddColumnIfMissing(db, "issue", "issue_no",
             "ALTER TABLE [issue] ADD [issue_no] NVARCHAR(50) NULL");
         db.Database.ExecuteSqlRaw("""

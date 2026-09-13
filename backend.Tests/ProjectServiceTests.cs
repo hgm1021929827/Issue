@@ -16,15 +16,15 @@ public class ProjectServiceTests
             .Options;
         var db = new AppDbContext(options);
         db.MajorCategories.AddRange(
-            new MajorCategory { MajorCategoryId = 1, CategoryName = "議題分類", ColorHex = "#8FA8C8", SortOrder = 1 },
-            new MajorCategory { MajorCategoryId = 2, CategoryName = "預約", ColorHex = "#8FA8C8", SortOrder = 2 }
+            new MajorCategory { MajorCategoryId = 1, CategoryName = "議題分類", ColorHex = "#91BFD5", SortOrder = 1 },
+            new MajorCategory { MajorCategoryId = 2, CategoryName = "預約", ColorHex = "#91BFD5", SortOrder = 2 }
         );
         db.SubCategories.Add(new SubCategory
         {
             SubCategoryId = 11,
             MajorCategoryId = 1,
             SubCategoryName = "進行中",
-            ColorHex = "#5BA3C9",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.ClientCompanies.Add(new ClientCompany
@@ -161,15 +161,15 @@ public class CategoryProjectUsageTests
             .Options;
         var db = new AppDbContext(options);
         db.MajorCategories.AddRange(
-            new MajorCategory { MajorCategoryId = 1, CategoryName = "議題分類", ColorHex = "#8FA8C8", SortOrder = 1 },
-            new MajorCategory { MajorCategoryId = 2, CategoryName = "預約", ColorHex = "#8FA8C8", SortOrder = 2 }
+            new MajorCategory { MajorCategoryId = 1, CategoryName = "議題分類", ColorHex = "#91BFD5", SortOrder = 1 },
+            new MajorCategory { MajorCategoryId = 2, CategoryName = "預約", ColorHex = "#91BFD5", SortOrder = 2 }
         );
         db.SubCategories.Add(new SubCategory
         {
             SubCategoryId = 11,
             MajorCategoryId = 1,
             SubCategoryName = "進行中",
-            ColorHex = "#5BA3C9",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.SaveChanges();

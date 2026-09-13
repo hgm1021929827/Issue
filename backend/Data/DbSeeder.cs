@@ -1,3 +1,4 @@
+using Issue.Api.Common;
 using Issue.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,7 +36,36 @@ public static partial class DbSeeder
 
     public static void Seed(AppDbContext db)
     {
+        RemapLegacyCategoryColors(db);
         EnsureIssueMajorAndSubs(db);
+    }
+
+    /// <summary>將庫內仍為第一階段舊備選色的分類色改寫為新粉彩色盤。</summary>
+    public static void RemapLegacyCategoryColors(AppDbContext db)
+    {
+        var changed = false;
+        foreach (var major in db.MajorCategories)
+        {
+            var mapped = ColorPresets.MapOrDefault(major.ColorHex);
+            if (!string.Equals(major.ColorHex, mapped, StringComparison.OrdinalIgnoreCase))
+            {
+                major.ColorHex = mapped;
+                changed = true;
+            }
+        }
+        foreach (var sub in db.SubCategories)
+        {
+            var mapped = ColorPresets.MapOrDefault(sub.ColorHex);
+            if (!string.Equals(sub.ColorHex, mapped, StringComparison.OrdinalIgnoreCase))
+            {
+                sub.ColorHex = mapped;
+                changed = true;
+            }
+        }
+        if (changed)
+        {
+            db.SaveChanges();
+        }
     }
 
     public static void EnsureIssueMajorAndSubs(AppDbContext db)
@@ -47,7 +77,7 @@ public static partial class DbSeeder
             major = new MajorCategory
             {
                 CategoryName = "議題",
-                ColorHex = "#8FA8C8",
+                ColorHex = ColorPresets.Default,
                 SortOrder = 2
             };
             db.MajorCategories.Add(major);
@@ -57,9 +87,9 @@ public static partial class DbSeeder
         var sort = existing.Select(x => x.SortOrder).DefaultIfEmpty(0).Max();
         (string Name, string Color)[] issueSubs =
         [
-            ("處理中", "#7EB8D8"),
-            ("加簽", "#E0A86B"),
-            ("已結案", "#6BB3A8")
+            ("處理中", "#A9D6E8"), // 粉藍
+            ("加簽", "#EBC5A5"),   // 杏桃橘
+            ("已結案", "#A8D8CF")  // 薄荷綠
         ];
         foreach (var (name, color) in issueSubs)
         {

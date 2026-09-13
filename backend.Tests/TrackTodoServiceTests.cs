@@ -20,7 +20,7 @@ public class TrackTodoServiceTests
         {
             MajorCategoryId = 1,
             CategoryName = "議題分類",
-            ColorHex = "#8FA8C8",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.ClientCompanies.AddRange(

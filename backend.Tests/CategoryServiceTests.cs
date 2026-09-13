@@ -16,10 +16,10 @@ public class CategoryServiceTests
             .Options;
         var db = new AppDbContext(options);
         db.MajorCategories.AddRange(
-            new MajorCategory { MajorCategoryId = 1, CategoryName = "處理中", ColorHex = "#8FA8C8", SortOrder = 1 },
-            new MajorCategory { MajorCategoryId = 2, CategoryName = "加簽中", ColorHex = "#8FA8C8", SortOrder = 2 },
-            new MajorCategory { MajorCategoryId = 3, CategoryName = "預約", ColorHex = "#8FA8C8", SortOrder = 3 },
-            new MajorCategory { MajorCategoryId = 4, CategoryName = "已完成", ColorHex = "#8FA8C8", SortOrder = 4 }
+            new MajorCategory { MajorCategoryId = 1, CategoryName = "處理中", ColorHex = "#91BFD5", SortOrder = 1 },
+            new MajorCategory { MajorCategoryId = 2, CategoryName = "加簽中", ColorHex = "#91BFD5", SortOrder = 2 },
+            new MajorCategory { MajorCategoryId = 3, CategoryName = "預約", ColorHex = "#91BFD5", SortOrder = 3 },
+            new MajorCategory { MajorCategoryId = 4, CategoryName = "已完成", ColorHex = "#91BFD5", SortOrder = 4 }
         );
         db.SaveChanges();
         return db;
@@ -30,10 +30,10 @@ public class CategoryServiceTests
     {
         await using var db = CreateDb();
         var svc = new CategoryService(db);
-        var created = await svc.CreateSubAsync(new SubCategoryWriteDto { MajorCategoryId = 1, Name = "已發信", Color = "#7EB8D8" });
+        var created = await svc.CreateSubAsync(new SubCategoryWriteDto { MajorCategoryId = 1, Name = "已發信", Color = "#A9D6E8" });
         var id = created[0].Id;
-        var list = await svc.UpdateSubAsync(id, new SubCategoryUpdateDto { Color = "#9B8FBF" });
-        Assert.Equal("#9B8FBF", list[0].Color);
+        var list = await svc.UpdateSubAsync(id, new SubCategoryUpdateDto { Color = "#C7BAD9" });
+        Assert.Equal("#C7BAD9", list[0].Color);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class CategoryServiceTests
         db.MajorCategories.Add(new MajorCategory
         {
             CategoryName = "自訂",
-            ColorHex = "#8FA8C8",
+            ColorHex = "#91BFD5",
             SortOrder = 1
         });
         db.SaveChanges();

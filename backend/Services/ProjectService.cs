@@ -430,7 +430,7 @@ public class ProjectService(AppDbContext db)
     }
 
     private static string DisplayColor(string? hex) =>
-        ColorPresets.IsAllowed(hex) ? ColorPresets.Normalize(hex!) : "#8FA8C8";
+        ColorPresets.MapOrDefault(hex);
 
     private static ProjectListItemDto ToListItem(Project x, int itemCount, int workItemCount = 0)
     {
