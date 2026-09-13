@@ -14,6 +14,7 @@ import { api } from "../api.js";
 import AppDialog from "./AppDialog.jsx";
 import AppSelect from "./AppSelect.jsx";
 import AppDateField from "./AppDateField.jsx";
+import AppTextarea from "./AppTextarea.jsx";
 import PageTitle from "./PageTitle.jsx";
 
 function targetLabel(item) {
@@ -276,7 +277,7 @@ export default function TrackTodoList({
           </label>
           <label>
             內容
-            <textarea rows={2} maxLength={2000} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+            <AppTextarea rows={2} maxLength={2000} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
           </label>
           <div className="two-col">
             <label>

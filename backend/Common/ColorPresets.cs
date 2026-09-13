@@ -6,17 +6,17 @@ public static class ColorPresets
     public const string Default = "#91BFD5";
 
     /// <summary>
-    /// 低飽和粉彩備選色，由冷至暖、相近色系排列。
+    /// 低飽和粉彩備選色；固定 10 色，排序以相鄰可辨為主。
     /// </summary>
     public static readonly string[] All =
     [
         "#A9D6E8", // 粉藍
-        "#91BFD5", // 霧藍
-        "#B8B4CF", // 灰紫
-        "#C7BAD9", // 薰衣草紫
         "#A8D8CF", // 薄荷綠
-        "#B7CDB1", // 鼠尾草綠
+        "#C7BAD9", // 薰衣草紫
         "#E8D5A9", // 奶油黃
+        "#91BFD5", // 霧藍（預設色）
+        "#B7CDB1", // 鼠尾草綠
+        "#B8B4CF", // 灰紫
         "#EBC5A5", // 杏桃橘
         "#DFB6BE", // 霧粉紅
         "#D6C1A5"  // 奶茶色

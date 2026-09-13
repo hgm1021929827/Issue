@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AppTextarea from "./AppTextarea.jsx";
 
 export default function AppDialog({
   open,
@@ -48,7 +49,7 @@ export default function AppDialog({
           <label key={field.name}>
             {field.label}
             {field.multiline ? (
-              <textarea
+              <AppTextarea
                 rows={3}
                 value={values[field.name] || ""}
                 onChange={(e) => setValues({ ...values, [field.name]: e.target.value })}

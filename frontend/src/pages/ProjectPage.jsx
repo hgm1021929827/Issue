@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import AppDialog from "../components/AppDialog.jsx";
 import AppSelect from "../components/AppSelect.jsx";
 import AppDateField from "../components/AppDateField.jsx";
+import AppTextarea from "../components/AppTextarea.jsx";
 import PageTitle from "../components/PageTitle.jsx";
 import VendorSelect from "../components/VendorSelect.jsx";
 import TrackTodoList from "../components/TrackTodoList.jsx";
@@ -363,35 +364,37 @@ export default function ProjectPage() {
           <PageTitle icon={FolderKanban}>
             {[form.code || id, form.name].filter(Boolean).join(" ")}
           </PageTitle>
-          <div className="filters member-tabs" role="tablist" aria-label="專案頁面">
-            <button
-              type="button"
-              role="tab"
-              className={tab === "content" ? "chip active" : "chip"}
-              aria-selected={tab === "content"}
-              onClick={() => setTab("content")}
-            >
-              專案內容
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className={tab === "workItems" ? "chip active" : "chip"}
-              aria-selected={tab === "workItems"}
-              onClick={() => setTab("workItems")}
-            >
-              工作項次（{workItems.length}）
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className={tab === "items" ? "chip active" : "chip"}
-              aria-selected={tab === "items"}
-              onClick={() => setTab("items")}
-            >
-              專案議題（{items.length}）
-            </button>
-            <button type="button" className="chip" onClick={() => { setError(""); setAskImport(true); }}>
+          <div className="row-between project-tab-bar">
+            <div className="filters member-tabs" role="tablist" aria-label="專案頁面">
+              <button
+                type="button"
+                role="tab"
+                className={tab === "content" ? "chip active" : "chip"}
+                aria-selected={tab === "content"}
+                onClick={() => setTab("content")}
+              >
+                專案內容
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={tab === "workItems" ? "chip active" : "chip"}
+                aria-selected={tab === "workItems"}
+                onClick={() => setTab("workItems")}
+              >
+                工作項次（{workItems.length}）
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={tab === "items" ? "chip active" : "chip"}
+                aria-selected={tab === "items"}
+                onClick={() => setTab("items")}
+              >
+                專案議題（{items.length}）
+              </button>
+            </div>
+            <button type="button" className="btn secondary" onClick={() => { setError(""); setAskImport(true); }}>
               <FileSpreadsheet size={14} strokeWidth={1.75} aria-hidden="true" />
               匯入 Excel
             </button>
@@ -432,7 +435,7 @@ export default function ProjectPage() {
         </label>
         <label>
           工作說明
-          <textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <AppTextarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </label>
         <div className="two-col">
           <label>
@@ -592,7 +595,7 @@ export default function ProjectPage() {
                     </label>
                     <label>
                       標題
-                      <textarea
+                      <AppTextarea
                         required
                         rows={3}
                         maxLength={200}
@@ -602,7 +605,7 @@ export default function ProjectPage() {
                     </label>
                     <label>
                       內容
-                      <textarea rows={3} value={itemForm.content} onChange={(e) => setItemForm({ ...itemForm, content: e.target.value })} />
+                      <AppTextarea rows={3} value={itemForm.content} onChange={(e) => setItemForm({ ...itemForm, content: e.target.value })} />
                     </label>
                     <div className="two-col">
                       <label>

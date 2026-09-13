@@ -7,6 +7,7 @@ import TrackTodoList from "../components/TrackTodoList.jsx";
 import AppDialog from "../components/AppDialog.jsx";
 import AppSelect from "../components/AppSelect.jsx";
 import AppDateField from "../components/AppDateField.jsx";
+import AppTextarea from "../components/AppTextarea.jsx";
 import PageTitle from "../components/PageTitle.jsx";
 import VendorSelect from "../components/VendorSelect.jsx";
 
@@ -183,7 +184,7 @@ export default function IssuePage() {
         </label>
         <label>
           內容
-          <textarea
+          <AppTextarea
             rows={4}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -223,7 +224,7 @@ export default function IssuePage() {
         </label>
         <label>
           備註
-          <textarea rows={2} value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} />
+          <AppTextarea rows={2} value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} />
         </label>
         <div className="btn-row">
           <button className="btn" disabled={saving} type="submit">
