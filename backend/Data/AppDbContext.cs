@@ -269,14 +269,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.WorkHourId).HasColumnName("work_hour_id");
             e.Property(x => x.ProjectWorkItemId).HasColumnName("project_work_item_id");
             e.Property(x => x.ProjectIssueId).HasColumnName("project_issue_id");
+            e.Property(x => x.IssueId).HasColumnName("issue_id");
             e.Property(x => x.WorkDate).HasColumnName("work_date");
             e.Property(x => x.HourValue).HasColumnName("hour_value").HasPrecision(6, 2);
             e.Property(x => x.Remark).HasColumnName("remark").HasMaxLength(2000).IsRequired();
             e.HasIndex(x => new { x.ProjectWorkItemId, x.WorkDate }).IsUnique();
             e.HasIndex(x => new { x.ProjectIssueId, x.WorkDate }).IsUnique();
+            e.HasIndex(x => new { x.IssueId, x.WorkDate }).IsUnique();
             // SQL Server：避免經 project → work_item／issue 再進 work_hour 的多重 CASCADE
             e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

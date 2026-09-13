@@ -17,7 +17,10 @@ async function request(path, options = {}) {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options
   });
-  const body = await response.json().catch(() => ({ code: response.status, message: "無法解析回應" }));
+  const body = await response.json().catch(() => ({
+    code: response.status || 500,
+    message: `無法解析回應（HTTP ${response.status || "?"}）`
+  }));
   if (body.code !== 200) {
     const err = new Error(body.message || "請求失敗");
     err.code = body.code;
@@ -29,7 +32,10 @@ async function request(path, options = {}) {
 
 async function requestForm(path, formData) {
   const response = await fetch(`${BASE}${path}`, { method: "POST", body: formData });
-  const body = await response.json().catch(() => ({ code: response.status, message: "無法解析回應" }));
+  const body = await response.json().catch(() => ({
+    code: response.status || 500,
+    message: `無法解析回應（HTTP ${response.status || "?"}）`
+  }));
   if (body.code !== 200) {
     const err = new Error(body.message || "請求失敗");
     err.code = body.code;
@@ -67,6 +73,13 @@ export const api = {
   createIssue: (payload) => request("/issues", { method: "POST", body: JSON.stringify(payload) }),
   updateIssue: (id, payload) => request(`/issues/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   deleteIssue: (id) => request(`/issues/${id}`, { method: "DELETE" }),
+  issueHours: (id) => request(`/issues/${id}/hours`),
+  createIssueHour: (id, payload) =>
+    request(`/issues/${id}/hours`, { method: "POST", body: JSON.stringify(payload) }),
+  updateIssueHour: (id, hourId, payload) =>
+    request(`/issues/${id}/hours/${hourId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deleteIssueHour: (id, hourId) =>
+    request(`/issues/${id}/hours/${hourId}`, { method: "DELETE" }),
   todos: (issueId) => request(`/issues/${issueId}/todos`),
   createTodo: (issueId, payload) =>
     request(`/issues/${issueId}/todos`, { method: "POST", body: JSON.stringify(payload) }),

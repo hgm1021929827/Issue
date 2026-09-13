@@ -266,21 +266,39 @@ public static partial class DbSeeder
                 [work_hour_id] BIGINT NOT NULL IDENTITY(1,1),
                 [project_work_item_id] BIGINT NULL,
                 [project_issue_id] BIGINT NULL,
+                [issue_id] BIGINT NULL,
                 [work_date] DATE NOT NULL,
                 [hour_value] DECIMAL(6,2) NOT NULL,
                 [remark] NVARCHAR(2000) NOT NULL CONSTRAINT DF_work_hour_remark DEFAULT N'',
                 CONSTRAINT [PK_work_hour] PRIMARY KEY ([work_hour_id]),
                 CONSTRAINT [uk_work_hour_item] UNIQUE ([project_work_item_id], [work_date]),
                 CONSTRAINT [uk_work_hour_issue] UNIQUE ([project_issue_id], [work_date]),
+                CONSTRAINT [uk_work_hour_formal_issue] UNIQUE ([issue_id], [work_date]),
                 CONSTRAINT [fk_work_hour_item] FOREIGN KEY ([project_work_item_id]) REFERENCES [project_work_item] ([project_work_item_id]),
                 CONSTRAINT [fk_work_hour_issue] FOREIGN KEY ([project_issue_id]) REFERENCES [project_issue] ([project_issue_id]),
+                CONSTRAINT [fk_work_hour_formal_issue] FOREIGN KEY ([issue_id]) REFERENCES [issue] ([issue_id]),
                 CONSTRAINT [ck_work_hour_target] CHECK (
-                  (project_work_item_id IS NOT NULL AND project_issue_id IS NULL)
-                  OR (project_work_item_id IS NULL AND project_issue_id IS NOT NULL)
+                  (project_work_item_id IS NOT NULL AND project_issue_id IS NULL AND issue_id IS NULL)
+                  OR (project_work_item_id IS NULL AND project_issue_id IS NOT NULL AND issue_id IS NULL)
+                  OR (project_work_item_id IS NULL AND project_issue_id IS NULL AND issue_id IS NOT NULL)
                 ),
                 CONSTRAINT [ck_work_hour_value] CHECK ([hour_value] > 0 AND [hour_value] <= 999.99)
               );
             END
+            """);
+        SqlAddColumnIfMissing(db, "work_hour", "issue_id",
+            "ALTER TABLE [work_hour] ADD [issue_id] BIGINT NULL");
+        SqlAddIndexIfMissing(db, "work_hour", "uk_work_hour_formal_issue",
+            "CREATE UNIQUE INDEX [uk_work_hour_formal_issue] ON [work_hour] ([issue_id], [work_date])");
+        SqlAddFkIfMissing(db, "fk_work_hour_formal_issue",
+            "ALTER TABLE [work_hour] ADD CONSTRAINT [fk_work_hour_formal_issue] FOREIGN KEY ([issue_id]) REFERENCES [issue] ([issue_id])");
+        SqlDropCheckIfExists(db, "work_hour", "ck_work_hour_target");
+        SqlAddCheckIfMissing(db, "work_hour", "ck_work_hour_target", """
+            ALTER TABLE [work_hour] ADD CONSTRAINT [ck_work_hour_target] CHECK (
+              (project_work_item_id IS NOT NULL AND project_issue_id IS NULL AND issue_id IS NULL)
+              OR (project_work_item_id IS NULL AND project_issue_id IS NOT NULL AND issue_id IS NULL)
+              OR (project_work_item_id IS NULL AND project_issue_id IS NULL AND issue_id IS NOT NULL)
+            )
             """);
         SqlAddColumnIfMissing(db, "track_todo", "project_work_item_id",
             "ALTER TABLE [track_todo] ADD [project_work_item_id] BIGINT NULL");

@@ -2,12 +2,19 @@ import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import AppDateField from "./AppDateField.jsx";
 
-const empty = () => ({ date: "", hours: "", remark: "" });
+function todayIso() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+const empty = () => ({ date: todayIso(), hours: "", remark: "" });
 
 export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, onDelete, onError }) {
   const [form, setForm] = useState(empty());
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const payload = () => ({
     date: form.date,
@@ -15,16 +22,22 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
     remark: form.remark
   });
 
+  const fail = (message) => {
+    setError(message);
+    onError?.(message);
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     setSaving(true);
+    setError("");
     try {
       if (editingId) await onUpdate(editingId, payload());
       else await onCreate(payload());
       setForm(empty());
       setEditingId(null);
     } catch (err) {
-      onError?.(err.message);
+      fail(err.message);
     } finally {
       setSaving(false);
     }
@@ -36,6 +49,7 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
         <h3>紀錄工時</h3>
         <span className="muted">合計 {Number(hoursTotal || 0).toFixed(2)}</span>
       </div>
+      {error && <p className="banner error">{error}</p>}
       <form className="hours-form" onSubmit={submit}>
         <label>
           日期
@@ -70,6 +84,7 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
             className="btn"
             type="button"
             onClick={() => {
+              setError("");
               setEditingId(null);
               setForm(empty());
             }}
@@ -100,6 +115,7 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
                     title="編輯"
                     aria-label="編輯工時"
                     onClick={() => {
+                      setError("");
                       setEditingId(row.id);
                       setForm({ date: row.date, hours: String(row.hours), remark: row.remark || "" });
                     }}
@@ -117,6 +133,7 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
                     title="刪除"
                     aria-label="刪除工時"
                     onClick={async () => {
+                      setError("");
                       try {
                         await onDelete(row.id);
                         if (editingId === row.id) {
@@ -124,7 +141,7 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
                           setForm(empty());
                         }
                       } catch (err) {
-                        onError?.(err.message);
+                        fail(err.message);
                       }
                     }}
                   >

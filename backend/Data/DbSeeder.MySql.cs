@@ -256,20 +256,38 @@ public static partial class DbSeeder
                           `work_hour_id` BIGINT NOT NULL AUTO_INCREMENT,
                           `project_work_item_id` BIGINT NULL,
                           `project_issue_id` BIGINT NULL,
+                          `issue_id` BIGINT NULL,
                           `work_date` DATE NOT NULL,
                           `hour_value` DECIMAL(6,2) NOT NULL,
                           `remark` VARCHAR(2000) NOT NULL DEFAULT '',
                           PRIMARY KEY (`work_hour_id`),
                           UNIQUE KEY `uk_work_hour_item` (`project_work_item_id`, `work_date`),
                           UNIQUE KEY `uk_work_hour_issue` (`project_issue_id`, `work_date`),
+                          UNIQUE KEY `uk_work_hour_formal_issue` (`issue_id`, `work_date`),
                           CONSTRAINT `fk_work_hour_item` FOREIGN KEY (`project_work_item_id`) REFERENCES `project_work_item` (`project_work_item_id`) ON DELETE CASCADE,
                           CONSTRAINT `fk_work_hour_issue` FOREIGN KEY (`project_issue_id`) REFERENCES `project_issue` (`project_issue_id`) ON DELETE CASCADE,
+                          CONSTRAINT `fk_work_hour_formal_issue` FOREIGN KEY (`issue_id`) REFERENCES `issue` (`issue_id`) ON DELETE CASCADE,
                           CONSTRAINT `ck_work_hour_target` CHECK (
-                            (project_work_item_id IS NOT NULL AND project_issue_id IS NULL)
-                            OR (project_work_item_id IS NULL AND project_issue_id IS NOT NULL)
+                            (project_work_item_id IS NOT NULL AND project_issue_id IS NULL AND issue_id IS NULL)
+                            OR (project_work_item_id IS NULL AND project_issue_id IS NOT NULL AND issue_id IS NULL)
+                            OR (project_work_item_id IS NULL AND project_issue_id IS NULL AND issue_id IS NOT NULL)
                           ),
                           CONSTRAINT `ck_work_hour_value` CHECK (`hour_value` > 0 AND `hour_value` <= 999.99)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                        """);
+                    MySqlAddColumnIfMissing(db, "work_hour", "issue_id",
+                        "ALTER TABLE `work_hour` ADD COLUMN `issue_id` BIGINT NULL");
+                    MySqlAddIndexIfMissing(db, "work_hour", "uk_work_hour_formal_issue",
+                        "ALTER TABLE `work_hour` ADD UNIQUE KEY `uk_work_hour_formal_issue` (`issue_id`, `work_date`)");
+                    MySqlAddFkIfMissing(db, "work_hour", "fk_work_hour_formal_issue",
+                        "ALTER TABLE `work_hour` ADD CONSTRAINT `fk_work_hour_formal_issue` FOREIGN KEY (`issue_id`) REFERENCES `issue` (`issue_id`) ON DELETE CASCADE");
+                    MySqlDropCheckIfExists(db, "work_hour", "ck_work_hour_target");
+                    MySqlAddCheckIfMissing(db, "work_hour", "ck_work_hour_target", """
+                        ALTER TABLE `work_hour` ADD CONSTRAINT `ck_work_hour_target` CHECK (
+                          (project_work_item_id IS NOT NULL AND project_issue_id IS NULL AND issue_id IS NULL)
+                          OR (project_work_item_id IS NULL AND project_issue_id IS NOT NULL AND issue_id IS NULL)
+                          OR (project_work_item_id IS NULL AND project_issue_id IS NULL AND issue_id IS NOT NULL)
+                        )
                         """);
                     MySqlAddColumnIfMissing(db, "track_todo", "project_work_item_id",
                         "ALTER TABLE `track_todo` ADD COLUMN `project_work_item_id` BIGINT NULL");

@@ -10,6 +10,7 @@ public class WorkHourService(AppDbContext db)
 {
     public const string OwnerWorkItem = "workItem";
     public const string OwnerIssue = "projectIssue";
+    public const string OwnerFormalIssue = "formalIssue";
 
     public Task<List<WorkHourDto>> ListForWorkItemAsync(long projectId, long workItemId) =>
         ListAsync(projectId, OwnerWorkItem, workItemId);
@@ -35,8 +36,25 @@ public class WorkHourService(AppDbContext db)
     public Task<List<WorkHourDto>> DeleteForIssueAsync(long projectId, long itemId, long hourId) =>
         DeleteAsync(projectId, OwnerIssue, itemId, hourId);
 
+    public Task<List<WorkHourDto>> ListForFormalIssueAsync(long issueId) =>
+        ListAsync(null, OwnerFormalIssue, issueId);
+
+    public Task<List<WorkHourDto>> CreateForFormalIssueAsync(long issueId, WorkHourWriteDto input) =>
+        CreateAsync(null, OwnerFormalIssue, issueId, input);
+
+    public Task<List<WorkHourDto>> UpdateForFormalIssueAsync(long issueId, long hourId, WorkHourWriteDto input) =>
+        UpdateAsync(null, OwnerFormalIssue, issueId, hourId, input);
+
+    public Task<List<WorkHourDto>> DeleteForFormalIssueAsync(long issueId, long hourId) =>
+        DeleteAsync(null, OwnerFormalIssue, issueId, hourId);
+
     public async Task RecalcActualStartAsync(string ownerKind, long ownerId)
     {
+        if (ownerKind == OwnerFormalIssue)
+        {
+            return;
+        }
+
         var dates = await QueryByOwner(ownerKind, ownerId).Select(x => x.WorkDate).ToListAsync();
         var start = dates.Count == 0 ? (DateOnly?)null : dates.Min();
         if (ownerKind == OwnerWorkItem)
@@ -56,7 +74,7 @@ public class WorkHourService(AppDbContext db)
         await db.SaveChangesAsync();
     }
 
-    private async Task<List<WorkHourDto>> ListAsync(long projectId, string ownerKind, long ownerId)
+    private async Task<List<WorkHourDto>> ListAsync(long? projectId, string ownerKind, long ownerId)
     {
         await EnsureOwner(projectId, ownerKind, ownerId);
         return await QueryByOwner(ownerKind, ownerId)
@@ -66,7 +84,7 @@ public class WorkHourService(AppDbContext db)
             .ToListAsync();
     }
 
-    private async Task<List<WorkHourDto>> CreateAsync(long projectId, string ownerKind, long ownerId, WorkHourWriteDto input)
+    private async Task<List<WorkHourDto>> CreateAsync(long? projectId, string ownerKind, long ownerId, WorkHourWriteDto input)
     {
         await EnsureOwner(projectId, ownerKind, ownerId);
         var date = RequireDate(input.Date);
@@ -81,6 +99,7 @@ public class WorkHourService(AppDbContext db)
         {
             ProjectWorkItemId = ownerKind == OwnerWorkItem ? ownerId : null,
             ProjectIssueId = ownerKind == OwnerIssue ? ownerId : null,
+            IssueId = ownerKind == OwnerFormalIssue ? ownerId : null,
             WorkDate = date,
             HourValue = hours,
             Remark = remark
@@ -90,7 +109,7 @@ public class WorkHourService(AppDbContext db)
         return await ListAsync(projectId, ownerKind, ownerId);
     }
 
-    private async Task<List<WorkHourDto>> UpdateAsync(long projectId, string ownerKind, long ownerId, long hourId, WorkHourWriteDto input)
+    private async Task<List<WorkHourDto>> UpdateAsync(long? projectId, string ownerKind, long ownerId, long hourId, WorkHourWriteDto input)
     {
         await EnsureOwner(projectId, ownerKind, ownerId);
         var row = await QueryByOwner(ownerKind, ownerId).FirstOrDefaultAsync(x => x.WorkHourId == hourId)
@@ -108,7 +127,7 @@ public class WorkHourService(AppDbContext db)
         return await ListAsync(projectId, ownerKind, ownerId);
     }
 
-    private async Task<List<WorkHourDto>> DeleteAsync(long projectId, string ownerKind, long ownerId, long hourId)
+    private async Task<List<WorkHourDto>> DeleteAsync(long? projectId, string ownerKind, long ownerId, long hourId)
     {
         await EnsureOwner(projectId, ownerKind, ownerId);
         var row = await QueryByOwner(ownerKind, ownerId).FirstOrDefaultAsync(x => x.WorkHourId == hourId)
@@ -119,30 +138,43 @@ public class WorkHourService(AppDbContext db)
         return await ListAsync(projectId, ownerKind, ownerId);
     }
 
-    private async Task EnsureOwner(long projectId, string ownerKind, long ownerId)
+    private async Task EnsureOwner(long? projectId, string ownerKind, long ownerId)
     {
-        if (!await db.Projects.AnyAsync(x => x.ProjectId == projectId))
+        if (ownerKind == OwnerFormalIssue)
+        {
+            if (!await db.Issues.AnyAsync(x => x.IssueId == ownerId))
+            {
+                throw new AppException(404, "找不到該議題");
+            }
+            return;
+        }
+
+        if (projectId is null || !await db.Projects.AnyAsync(x => x.ProjectId == projectId.Value))
         {
             throw new AppException(404, "找不到該專案");
         }
         if (ownerKind == OwnerWorkItem)
         {
-            if (!await db.ProjectWorkItems.AnyAsync(x => x.ProjectWorkItemId == ownerId && x.ProjectId == projectId))
+            if (!await db.ProjectWorkItems.AnyAsync(x => x.ProjectWorkItemId == ownerId && x.ProjectId == projectId.Value))
             {
                 throw new AppException(404, "找不到該工作項次");
             }
             return;
         }
-        if (!await db.ProjectIssues.AnyAsync(x => x.ProjectIssueId == ownerId && x.ProjectId == projectId))
+        if (!await db.ProjectIssues.AnyAsync(x => x.ProjectIssueId == ownerId && x.ProjectId == projectId.Value))
         {
             throw new AppException(404, "找不到該專案議題");
         }
     }
 
     private IQueryable<WorkHour> QueryByOwner(string ownerKind, long ownerId) =>
-        ownerKind == OwnerWorkItem
-            ? db.WorkHours.Where(x => x.ProjectWorkItemId == ownerId)
-            : db.WorkHours.Where(x => x.ProjectIssueId == ownerId);
+        ownerKind switch
+        {
+            OwnerWorkItem => db.WorkHours.Where(x => x.ProjectWorkItemId == ownerId),
+            OwnerIssue => db.WorkHours.Where(x => x.ProjectIssueId == ownerId),
+            OwnerFormalIssue => db.WorkHours.Where(x => x.IssueId == ownerId),
+            _ => throw new AppException(500, "未知的工時歸屬")
+        };
 
     private static DateOnly RequireDate(DateOnly date)
     {

@@ -4,6 +4,7 @@ import { FilePlus2, NotebookPen } from "lucide-react";
 import { api } from "../api.js";
 import TodoTree from "../components/TodoTree.jsx";
 import TrackTodoList from "../components/TrackTodoList.jsx";
+import WorkHourTable from "../components/WorkHourTable.jsx";
 import AppDialog from "../components/AppDialog.jsx";
 import AppSelect from "../components/AppSelect.jsx";
 import AppDateField from "../components/AppDateField.jsx";
@@ -45,9 +46,12 @@ export default function IssuePage() {
   const [todos, setTodos] = useState([]);
   const [tracks, setTracks] = useState([]);
   const [tracksReady, setTracksReady] = useState(false);
+  const [hours, setHours] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
+
+  const hoursTotal = hours.reduce((sum, row) => sum + Number(row.hours || 0), 0);
 
   const loadSubs = async (majorId, keepSub) => {
     const list = await api.subCategories(majorId);
@@ -69,9 +73,15 @@ export default function IssuePage() {
             || majorList[0];
           await loadSubs(issueMajor?.id, "");
           setForm({ ...emptyForm, majorCategoryId: issueMajor?.id });
+          setHours([]);
           return;
         }
-        const [issue, tree, trackList] = await Promise.all([api.issue(id), api.todos(id), api.issueTrackTodos(id)]);
+        const [issue, tree, trackList, hourList] = await Promise.all([
+          api.issue(id),
+          api.todos(id),
+          api.issueTrackTodos(id),
+          api.issueHours(id)
+        ]);
         await loadSubs(issue.majorCategoryId, issue.subCategoryId);
         setForm({
           issueNo: issue.issueNo || "",
@@ -89,6 +99,7 @@ export default function IssuePage() {
         });
         setTodos(tree);
         setTracks(trackList);
+        setHours(hourList);
         setTracksReady(true);
       } catch (err) {
         setError(err.message);
@@ -237,6 +248,22 @@ export default function IssuePage() {
           )}
         </div>
       </form>
+      {!isNew && (
+        <WorkHourTable
+          hours={hours}
+          hoursTotal={hoursTotal}
+          onError={setError}
+          onCreate={async (payload) => {
+            setHours(await api.createIssueHour(id, payload));
+          }}
+          onUpdate={async (hourId, payload) => {
+            setHours(await api.updateIssueHour(id, hourId, payload));
+          }}
+          onDelete={async (hourId) => {
+            setHours(await api.deleteIssueHour(id, hourId));
+          }}
+        />
+      )}
       {!isNew && (
         <TrackTodoList
           items={tracks}

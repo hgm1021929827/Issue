@@ -113,6 +113,7 @@ public class IssueService(AppDbContext db)
     {
         var item = await db.Issues.FirstOrDefaultAsync(x => x.IssueId == id)
             ?? throw new AppException(404, "找不到該議題");
+        db.WorkHours.RemoveRange(db.WorkHours.Where(x => x.IssueId == id));
         db.TrackTodos.RemoveRange(db.TrackTodos.Where(x => x.IssueId == id));
         var todos = db.IssueTodos.Where(x => x.IssueId == id);
         db.IssueTodos.RemoveRange(todos);

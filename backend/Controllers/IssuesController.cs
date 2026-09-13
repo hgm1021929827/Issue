@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Issue.Api.Controllers;
 
 [ApiController]
-public class IssuesController(IssueService issues, TodoService todos, TrackTodoService tracks) : ApiControllerBase
+public class IssuesController(IssueService issues, TodoService todos, TrackTodoService tracks, WorkHourService hours) : ApiControllerBase
 {
     [HttpGet("/issues")]
     public async Task<IActionResult> List(
@@ -65,4 +65,20 @@ public class IssuesController(IssueService issues, TodoService todos, TrackTodoS
     [HttpPost("/issues/{issueId:long}/track-todos")]
     public async Task<IActionResult> AddTrackTodo(long issueId, [FromBody] TrackTodoWriteDto input) =>
         OkData(await tracks.CreateForIssueAsync(issueId, input));
+
+    [HttpGet("/issues/{id:long}/hours")]
+    public async Task<IActionResult> ListHours(long id) =>
+        OkData(await hours.ListForFormalIssueAsync(id));
+
+    [HttpPost("/issues/{id:long}/hours")]
+    public async Task<IActionResult> CreateHour(long id, [FromBody] WorkHourWriteDto input) =>
+        OkData(await hours.CreateForFormalIssueAsync(id, input));
+
+    [HttpPut("/issues/{id:long}/hours/{hourId:long}")]
+    public async Task<IActionResult> UpdateHour(long id, long hourId, [FromBody] WorkHourWriteDto input) =>
+        OkData(await hours.UpdateForFormalIssueAsync(id, hourId, input));
+
+    [HttpDelete("/issues/{id:long}/hours/{hourId:long}")]
+    public async Task<IActionResult> DeleteHour(long id, long hourId) =>
+        OkData(await hours.DeleteForFormalIssueAsync(id, hourId));
 }
