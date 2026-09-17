@@ -358,6 +358,7 @@ public class IssueImportService(AppDbContext db, ImportNotFoundCache cache)
             }
             else
             {
+                db.WorkHours.RemoveRange(db.WorkHours.Where(x => x.IssueId == row.IssueId));
                 db.TrackTodos.RemoveRange(db.TrackTodos.Where(x => x.IssueId == row.IssueId));
                 db.IssueTodos.RemoveRange(db.IssueTodos.Where(x => x.IssueId == row.IssueId));
                 db.IssuePlans.RemoveRange(db.IssuePlans.Where(x => x.IssueId == row.IssueId));

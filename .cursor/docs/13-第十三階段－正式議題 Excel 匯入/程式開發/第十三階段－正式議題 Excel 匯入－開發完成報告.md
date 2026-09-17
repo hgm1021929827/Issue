@@ -56,6 +56,10 @@ EnsureSchema 增量（無獨立 Migration 專案）：
 - 未把 Template 全檔當單元測試夾具；請 QA 用 `Template/議題匯入範本.xls` 手動抽樣。
 - 預設小分類依名稱「處理中」「加簽」「已結案」；庫中若尚無該名稱，對話需手動選三個不同小分類（啟動 seed 會補上）。
 
+## 增量（2026-09-17）
+
+結果頁對未找到選「刪除」時，先刪該議題的 `work_hour`（`issue_id`），再刪 TODO／追蹤／預計項目與議題本身。對齊詳情頁刪除與 SQL Server `Restrict` FK（第十六階段工時接上後，否則結果頁刪除可能失敗）。單元測試 `Decisions_delete_also_removes_work_hours`。
+
 ## 建議 QA 測試重點
 
 1. `/issues` 匯入：選成員與三小分類記住（勿與專案匯入共用鍵）；一次一檔；`.xlsx` 拒絕。

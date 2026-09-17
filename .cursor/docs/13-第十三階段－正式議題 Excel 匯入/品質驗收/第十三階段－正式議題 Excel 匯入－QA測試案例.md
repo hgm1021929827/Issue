@@ -52,6 +52,7 @@
 | 03-04 PUT 鎖五欄 | `importedFromUof` 改 title／issueNo／content／dueDate／clientCompanyId | 400，`此議題由匯入產生，請重新匯入以更新編號、標題、內容、預計完成日或廠商` |
 | 03-05 PUT 備註 | 五欄不變，改 remark | 200；`importedFromUof` 仍 true |
 | 03-06 手建 POST | POST `/issues` | `importedFromUof=false`；請求不能把該欄改回 false（DTO 無此欄） |
+| 03-07 刪除未找到含工時 | 匯入列已有 `work_hour.issue_id`，再匯使它進 notFound，decision `delete` | 200；議題與該議題工時皆刪 |
 
 ## TC-04 Q-12-01 專案決策
 

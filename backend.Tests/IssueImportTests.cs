@@ -413,6 +413,35 @@ public class IssueImportTests
     }
 
     [Fact]
+    public async Task Decisions_delete_also_removes_work_hours()
+    {
+        await using var db = CreateDb();
+        var cache = new ImportNotFoundCache();
+        var svc = Service(db, cache);
+        await svc.ImportAsync(HtmlFile(UofHtml(
+            Row("T1", "一", "c", "2026/09/01", "客戶名稱 : 亞家科技", "處理中", "蕭維德", "", ""))), 1, 10, 12, 11);
+        var kept = db.Issues.Single(x => x.IssueNo == "T1");
+        db.WorkHours.Add(new WorkHour
+        {
+            IssueId = kept.IssueId,
+            WorkDate = new DateOnly(2026, 9, 17),
+            HourValue = 1.5m,
+            Remark = "匯入後工時"
+        });
+        await db.SaveChangesAsync();
+        var second = await svc.ImportAsync(HtmlFile(UofHtml(
+            Row("T2", "二", "c", "2026/09/01", "客戶名稱 : 亞家科技", "處理中", "蕭維德", "", ""))), 1, 10, 12, 11);
+        var missing = Assert.Single(second.NotFound);
+        Assert.Equal("T1", missing.IssueNo);
+        await svc.ApplyDecisionsAsync(new IssueImportDecisionRequestDto
+        {
+            Decisions = [new IssueImportDecisionItemDto { Id = missing.Id, Action = "delete" }]
+        });
+        Assert.DoesNotContain(db.Issues, x => x.IssueNo == "T1");
+        Assert.Empty(db.WorkHours);
+    }
+
+    [Fact]
     public async Task Update_locks_imported_fields()
     {
         await using var db = CreateDb();

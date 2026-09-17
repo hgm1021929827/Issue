@@ -271,9 +271,6 @@ public static partial class DbSeeder
                 [hour_value] DECIMAL(6,2) NOT NULL,
                 [remark] NVARCHAR(2000) NOT NULL CONSTRAINT DF_work_hour_remark DEFAULT N'',
                 CONSTRAINT [PK_work_hour] PRIMARY KEY ([work_hour_id]),
-                CONSTRAINT [uk_work_hour_item] UNIQUE ([project_work_item_id], [work_date]),
-                CONSTRAINT [uk_work_hour_issue] UNIQUE ([project_issue_id], [work_date]),
-                CONSTRAINT [uk_work_hour_formal_issue] UNIQUE ([issue_id], [work_date]),
                 CONSTRAINT [fk_work_hour_item] FOREIGN KEY ([project_work_item_id]) REFERENCES [project_work_item] ([project_work_item_id]),
                 CONSTRAINT [fk_work_hour_issue] FOREIGN KEY ([project_issue_id]) REFERENCES [project_issue] ([project_issue_id]),
                 CONSTRAINT [fk_work_hour_formal_issue] FOREIGN KEY ([issue_id]) REFERENCES [issue] ([issue_id]),
@@ -284,12 +281,25 @@ public static partial class DbSeeder
                 ),
                 CONSTRAINT [ck_work_hour_value] CHECK ([hour_value] > 0 AND [hour_value] <= 999.99)
               );
+              CREATE UNIQUE INDEX [uk_work_hour_item] ON [work_hour] ([project_work_item_id], [work_date]) WHERE [project_work_item_id] IS NOT NULL;
+              CREATE UNIQUE INDEX [uk_work_hour_issue] ON [work_hour] ([project_issue_id], [work_date]) WHERE [project_issue_id] IS NOT NULL;
+              CREATE UNIQUE INDEX [uk_work_hour_formal_issue] ON [work_hour] ([issue_id], [work_date]) WHERE [issue_id] IS NOT NULL;
             END
             """);
         SqlAddColumnIfMissing(db, "work_hour", "issue_id",
             "ALTER TABLE [work_hour] ADD [issue_id] BIGINT NULL");
-        SqlAddIndexIfMissing(db, "work_hour", "uk_work_hour_formal_issue",
-            "CREATE UNIQUE INDEX [uk_work_hour_formal_issue] ON [work_hour] ([issue_id], [work_date])");
+        SqlAddIndexIfMissing(db, "work_hour", "uk_work_hour_formal_issue", """
+            SET QUOTED_IDENTIFIER ON;
+            CREATE UNIQUE INDEX [uk_work_hour_formal_issue] ON [work_hour] ([issue_id], [work_date]) WHERE [issue_id] IS NOT NULL
+            """);
+        SqlAddIndexIfMissing(db, "work_hour", "uk_work_hour_item", """
+            SET QUOTED_IDENTIFIER ON;
+            CREATE UNIQUE INDEX [uk_work_hour_item] ON [work_hour] ([project_work_item_id], [work_date]) WHERE [project_work_item_id] IS NOT NULL
+            """);
+        SqlAddIndexIfMissing(db, "work_hour", "uk_work_hour_issue", """
+            SET QUOTED_IDENTIFIER ON;
+            CREATE UNIQUE INDEX [uk_work_hour_issue] ON [work_hour] ([project_issue_id], [work_date]) WHERE [project_issue_id] IS NOT NULL
+            """);
         SqlAddFkIfMissing(db, "fk_work_hour_formal_issue",
             "ALTER TABLE [work_hour] ADD CONSTRAINT [fk_work_hour_formal_issue] FOREIGN KEY ([issue_id]) REFERENCES [issue] ([issue_id])");
         SqlDropCheckIfExists(db, "work_hour", "ck_work_hour_target");

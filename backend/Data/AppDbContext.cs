@@ -273,9 +273,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.WorkDate).HasColumnName("work_date");
             e.Property(x => x.HourValue).HasColumnName("hour_value").HasPrecision(6, 2);
             e.Property(x => x.Remark).HasColumnName("remark").HasMaxLength(2000).IsRequired();
-            e.HasIndex(x => new { x.ProjectWorkItemId, x.WorkDate }).IsUnique();
-            e.HasIndex(x => new { x.ProjectIssueId, x.WorkDate }).IsUnique();
-            e.HasIndex(x => new { x.IssueId, x.WorkDate }).IsUnique();
+            // SQL Server：NULL 在 UNIQUE 中視為相等；多筆非該目標的工時會撞鍵，改用 filtered unique
+            e.HasIndex(x => new { x.ProjectWorkItemId, x.WorkDate }).IsUnique()
+                .HasFilter("[project_work_item_id] IS NOT NULL");
+            e.HasIndex(x => new { x.ProjectIssueId, x.WorkDate }).IsUnique()
+                .HasFilter("[project_issue_id] IS NOT NULL");
+            e.HasIndex(x => new { x.IssueId, x.WorkDate }).IsUnique()
+                .HasFilter("[issue_id] IS NOT NULL");
             // SQL Server：避免經 project → work_item／issue 再進 work_hour 的多重 CASCADE
             e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Restrict);
