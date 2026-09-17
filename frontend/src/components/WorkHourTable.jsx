@@ -10,7 +10,18 @@ function todayIso() {
 
 const empty = () => ({ date: todayIso(), hours: "", remark: "" });
 
+function dateKey(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
 export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, onDelete, onError }) {
+  const sortedHours = [...hours].sort((a, b) => {
+    const byDate = dateKey(a.date).localeCompare(dateKey(b.date));
+    if (byDate !== 0) return byDate;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+
   const [form, setForm] = useState(empty());
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -106,7 +117,7 @@ export default function WorkHourTable({ hours, hoursTotal, onCreate, onUpdate, o
             </tr>
           </thead>
           <tbody>
-            {hours.map((row) => (
+            {sortedHours.map((row) => (
               <tr key={row.id}>
                 <td className="hours-icon-col">
                   <button

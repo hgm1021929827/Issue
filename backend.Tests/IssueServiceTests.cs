@@ -310,4 +310,25 @@ public class IssueServiceTests
         Assert.Equal(400, ex.StatusCode);
         Assert.Contains("重新匯入", ex.Message);
     }
+
+    [Fact]
+    public async Task ClearMissingKept_sets_flag_false()
+    {
+        await using var db = CreateDb();
+        db.Issues.Single().MissingKept = true;
+        await db.SaveChangesAsync();
+        var svc = new IssueService(db);
+        var dto = await svc.ClearMissingKeptAsync(1);
+        Assert.False(dto.MissingKept);
+        Assert.False(db.Issues.Single().MissingKept);
+    }
+
+    [Fact]
+    public async Task ClearMissingKept_missing_issue_returns_404()
+    {
+        await using var db = CreateDb();
+        var svc = new IssueService(db);
+        var ex = await Assert.ThrowsAsync<AppException>(() => svc.ClearMissingKeptAsync(99));
+        Assert.Equal(404, ex.StatusCode);
+    }
 }

@@ -109,6 +109,16 @@ public class IssueService(AppDbContext db)
         return await GetAsync(id);
     }
 
+    public async Task<IssueDto> ClearMissingKeptAsync(long id)
+    {
+        var item = await db.Issues.FirstOrDefaultAsync(x => x.IssueId == id)
+            ?? throw new AppException(404, "找不到該議題");
+        item.MissingKept = false;
+        item.UpdatedAt = DateTime.Now;
+        await db.SaveChangesAsync();
+        return await GetAsync(id);
+    }
+
     public async Task DeleteAsync(long id)
     {
         var item = await db.Issues.FirstOrDefaultAsync(x => x.IssueId == id)

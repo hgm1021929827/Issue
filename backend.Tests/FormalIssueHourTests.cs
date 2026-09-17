@@ -69,6 +69,26 @@ public class FormalIssueHourTests
     }
 
     [Fact]
+    public async Task List_orders_by_work_date_ascending()
+    {
+        await using var db = CreateDb();
+        var hours = new WorkHourService(db);
+        await hours.CreateForFormalIssueAsync(1, new WorkHourWriteDto
+        {
+            Date = new DateOnly(2026, 9, 15),
+            Hours = 1m
+        });
+        var list = await hours.CreateForFormalIssueAsync(1, new WorkHourWriteDto
+        {
+            Date = new DateOnly(2026, 9, 13),
+            Hours = 2m
+        });
+        Assert.Equal(2, list.Count);
+        Assert.Equal(new DateOnly(2026, 9, 13), list[0].Date);
+        Assert.Equal(new DateOnly(2026, 9, 15), list[1].Date);
+    }
+
+    [Fact]
     public async Task Duplicate_day_returns_409()
     {
         await using var db = CreateDb();

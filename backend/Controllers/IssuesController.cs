@@ -44,6 +44,10 @@ public class IssuesController(IssueService issues, TodoService todos, TrackTodoS
     public async Task<IActionResult> Update(long id, [FromBody] IssueWriteDto input) =>
         OkData(await issues.UpdateAsync(id, input));
 
+    [HttpPost("/issues/{id:long}/clear-missing-kept")]
+    public async Task<IActionResult> ClearMissingKept(long id) =>
+        OkData(await issues.ClearMissingKeptAsync(id));
+
     [HttpDelete("/issues/{id:long}")]
     public async Task<IActionResult> Delete(long id)
     {

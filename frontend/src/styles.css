@@ -615,9 +615,38 @@ button:hover {
 }
 
 .tag.is-kept {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   margin-left: 0.4rem;
   background: #f3e2d4;
   color: #8a5a3c;
+}
+
+.issue-list .tag.is-kept {
+  display: flex;
+  width: fit-content;
+  margin-left: 0;
+  margin-top: 0.55rem;
+}
+
+.kept-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  line-height: 1;
+}
+
+.kept-clear:hover {
+  background: color-mix(in srgb, #8a5a3c 16%, transparent);
 }
 
 .item-done-icon {
@@ -664,6 +693,7 @@ button:hover {
 
 .hours-card {
   margin-top: 1.1rem;
+  margin-bottom: 1.85rem;
 }
 
 .hours-form {
@@ -1170,6 +1200,9 @@ textarea:read-only:focus {
   background: color-mix(in srgb, var(--accent-soft) 65%, #fff);
 }
 .form .page-title { margin-bottom: 0.85rem; }
+.form > .row-between { margin-bottom: 0.85rem; flex-wrap: wrap; }
+.form > .row-between .page-title { margin-bottom: 0; min-width: 0; }
+.form > .row-between .btn { flex-shrink: 0; white-space: nowrap; }
 .btn-row button { display: inline-flex; align-items: center; gap: 0.2rem; }
 
 .cal-grid {

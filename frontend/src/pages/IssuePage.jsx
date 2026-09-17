@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { FilePlus2, NotebookPen } from "lucide-react";
+import { ArrowLeft, FilePlus2, NotebookPen, X } from "lucide-react";
 import { api } from "../api.js";
+import { getIssueListPath } from "../issueListSearch.js";
 import TodoTree from "../components/TodoTree.jsx";
 import TrackTodoList from "../components/TrackTodoList.jsx";
 import WorkHourTable from "../components/WorkHourTable.jsx";
@@ -52,6 +53,7 @@ export default function IssuePage() {
   const [askDelete, setAskDelete] = useState(false);
 
   const hoursTotal = hours.reduce((sum, row) => sum + Number(row.hours || 0), 0);
+  const goToIssueList = () => navigate(getIssueListPath());
 
   const loadSubs = async (majorId, keepSub) => {
     const list = await api.subCategories(majorId);
@@ -118,18 +120,18 @@ export default function IssuePage() {
     clientCompanyId: form.clientCompanyId === "" ? null : Number(form.clientCompanyId)
   });
 
-  const save = async (event) => {
-    event.preventDefault();
+  const saveIssue = async ({ close } = {}) => {
     if (form.clientCompanyId === "" || form.clientCompanyId == null) {
       setError("請選擇客戶公司");
-      return;
+      return false;
     }
     setSaving(true);
     setError("");
     try {
       if (isNew) {
         const created = await api.createIssue(payload());
-        navigate(`/issues/${created.id}`);
+        if (close) goToIssueList();
+        else navigate(`/issues/${created.id}`);
       } else {
         const issue = await api.updateIssue(id, payload());
         setForm((prev) => ({
@@ -139,11 +141,34 @@ export default function IssuePage() {
           createdAt: issue.createdAt || prev.createdAt,
           updatedAt: issue.updatedAt || prev.updatedAt
         }));
+        if (close) goToIssueList();
       }
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
+    await saveIssue({ close: false });
+  };
+
+  const clearMissingKept = async () => {
+    if (isNew) return;
+    setError("");
+    try {
+      const issue = await api.clearIssueMissingKept(id);
+      setForm((prev) => ({
+        ...prev,
+        missingKept: !!issue.missingKept,
+        updatedAt: issue.updatedAt || prev.updatedAt
+      }));
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -153,10 +178,29 @@ export default function IssuePage() {
     <div>
       {error && <p className="banner error">{error}</p>}
       <form className="card form" onSubmit={save}>
-        <PageTitle icon={isNew ? FilePlus2 : NotebookPen}>
-          {isNew ? "新增議題" : `議題詳情 #${form.issueNo || id}`}
-          {form.missingKept ? <span className="tag is-kept">檔中沒有</span> : null}
-        </PageTitle>
+        <div className="row-between">
+          <PageTitle icon={isNew ? FilePlus2 : NotebookPen}>
+            {isNew ? "新增議題" : `議題詳情 #${form.issueNo || id}`}
+            {form.missingKept ? (
+              <span className="tag is-kept">
+                檔中沒有
+                <button
+                  type="button"
+                  className="kept-clear"
+                  title="取消檔中沒有"
+                  aria-label="取消檔中沒有"
+                  onClick={clearMissingKept}
+                >
+                  <X size={12} strokeWidth={2.25} aria-hidden="true" />
+                </button>
+              </span>
+            ) : null}
+          </PageTitle>
+          <button className="btn" type="button" onClick={goToIssueList}>
+            <ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />
+            回到議題列表
+          </button>
+        </div>
         {imported && (
           <p className="muted">此議題由匯入產生，編號、標題、內容、預計完成日與廠商請重新匯入以更新。</p>
         )}
@@ -241,6 +285,9 @@ export default function IssuePage() {
           <button className="btn" disabled={saving} type="submit">
             {saving ? "儲存中…" : "儲存"}
           </button>
+          <button className="btn" disabled={saving} type="button" onClick={() => saveIssue({ close: true })}>
+            {saving ? "儲存中…" : "儲存並關閉"}
+          </button>
           {!isNew && (
             <button className="btn danger" type="button" onClick={() => setAskDelete(true)}>
               刪除
@@ -295,7 +342,7 @@ export default function IssuePage() {
         onSubmit={async () => {
           try {
             await api.deleteIssue(id);
-            navigate("/issues");
+            goToIssueList();
           } catch (err) {
             setError(err.message);
             setAskDelete(false);

@@ -72,6 +72,7 @@ export const api = {
   issue: (id) => request(`/issues/${id}`),
   createIssue: (payload) => request("/issues", { method: "POST", body: JSON.stringify(payload) }),
   updateIssue: (id, payload) => request(`/issues/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  clearIssueMissingKept: (id) => request(`/issues/${id}/clear-missing-kept`, { method: "POST" }),
   deleteIssue: (id) => request(`/issues/${id}`, { method: "DELETE" }),
   issueHours: (id) => request(`/issues/${id}/hours`),
   createIssueHour: (id, payload) =>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ClipboardList, FileSpreadsheet, Plus, Search, Sparkles } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ClipboardList, FileSpreadsheet, Plus, Search, Sparkles, X } from "lucide-react";
 import { api } from "../api.js";
+import { rememberIssueListSearch } from "../issueListSearch.js";
 import AppSelect from "../components/AppSelect.jsx";
 import PageTitle from "../components/PageTitle.jsx";
 import ImportIssueDialog from "../components/ImportIssueDialog.jsx";
@@ -19,20 +20,34 @@ function dueClass(dueDate) {
 }
 
 export default function IssueListPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = searchParams.get("subCategoryId") || "";
+  const vendorId = searchParams.get("clientCompanyId") || "";
+  const appliedKeyword = searchParams.get("q") || "";
   const [subs, setSubs] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [filter, setFilter] = useState("");
-  const [vendorId, setVendorId] = useState("");
-  const [keyword, setKeyword] = useState("");
-  const [appliedKeyword, setAppliedKeyword] = useState("");
+  const [keyword, setKeyword] = useState(appliedKeyword);
   const [issues, setIssues] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [askImport, setAskImport] = useState(false);
   const navigate = useNavigate();
 
-  const applySearch = () => setAppliedKeyword(keyword.trim());
+  const applySearch = () => setListParams({ q: keyword.trim() });
   const hasFilter = Boolean(filter || vendorId || appliedKeyword);
+
+  const setListParams = (patch) => {
+    const next = {
+      subCategoryId: patch.subCategoryId !== undefined ? patch.subCategoryId : filter,
+      clientCompanyId: patch.clientCompanyId !== undefined ? patch.clientCompanyId : vendorId,
+      q: patch.q !== undefined ? patch.q : appliedKeyword
+    };
+    const params = new URLSearchParams();
+    if (next.subCategoryId) params.set("subCategoryId", String(next.subCategoryId));
+    if (next.clientCompanyId) params.set("clientCompanyId", String(next.clientCompanyId));
+    if (next.q) params.set("q", next.q);
+    setSearchParams(params, { replace: true });
+  };
 
   const loadMeta = async () => {
     const [majorList, companyList] = await Promise.all([
@@ -62,12 +77,34 @@ export default function IssueListPage() {
   };
 
   useEffect(() => {
+    setKeyword(appliedKeyword);
+  }, [appliedKeyword]);
+
+  useEffect(() => {
+    rememberIssueListSearch(searchParams.toString());
+  }, [searchParams]);
+
+  useEffect(() => {
     loadMeta().catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
     loadIssues();
   }, [filter, vendorId, appliedKeyword]);
+
+  const clearMissingKept = async (event, issueId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setError("");
+    try {
+      await api.clearIssueMissingKept(issueId);
+      setIssues((rows) => rows.map((row) => (
+        row.id === issueId ? { ...row, missingKept: false } : row
+      )));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   return (
     <div>
@@ -86,7 +123,7 @@ export default function IssueListPage() {
         </div>
       </div>
       <div className="filters">
-        <button className={!filter ? "chip active" : "chip"} type="button" onClick={() => setFilter("")}>
+        <button className={!filter ? "chip active" : "chip"} type="button" onClick={() => setListParams({ subCategoryId: "" })}>
           全部
         </button>
         {subs.map((s) => (
@@ -94,7 +131,7 @@ export default function IssueListPage() {
             key={s.id}
             type="button"
             className={String(filter) === String(s.id) ? "chip active" : "chip"}
-            onClick={() => setFilter(s.id)}
+            onClick={() => setListParams({ subCategoryId: s.id })}
           >
             {s.name}
           </button>
@@ -110,7 +147,7 @@ export default function IssueListPage() {
             { value: "", label: "全部廠商" },
             ...companies.map((c) => ({ value: c.id, label: c.name }))
           ]}
-          onChange={setVendorId}
+          onChange={(clientCompanyId) => setListParams({ clientCompanyId })}
         />
         <input
           type="search"
@@ -152,7 +189,20 @@ export default function IssueListPage() {
                 <span className="issue-id">#{item.issueNo || item.id}</span>
                 {item.title}
                 {item.clientCompanyName ? <span className="list-vendor">{item.clientCompanyName}</span> : null}
-                {item.missingKept ? <span className="tag is-kept">檔中沒有</span> : null}
+                {item.missingKept ? (
+                  <span className="tag is-kept">
+                    檔中沒有
+                    <button
+                      type="button"
+                      className="kept-clear"
+                      title="取消檔中沒有"
+                      aria-label="取消檔中沒有"
+                      onClick={(event) => clearMissingKept(event, item.id)}
+                    >
+                      <X size={12} strokeWidth={2.25} aria-hidden="true" />
+                    </button>
+                  </span>
+                ) : null}
               </strong>
               <em className={dueClass(item.dueDate)}>{item.dueDate || "無預計日"}</em>
             </Link>
