@@ -8,7 +8,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CheckSquare, GripVertical, Plus, Sparkles, Trash2 } from "lucide-react";
+import { CheckSquare, ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { api } from "../api.js";
 import AppDialog from "./AppDialog.jsx";
 import AppTextarea from "./AppTextarea.jsx";
@@ -25,34 +25,60 @@ function TrashIcon() {
   return <Trash2 size={15} strokeWidth={1.75} aria-hidden="true" />;
 }
 
+function PencilIcon() {
+  return <Pencil size={15} strokeWidth={1.75} aria-hidden="true" />;
+}
+
+function CloseIcon() {
+  return <X size={15} strokeWidth={1.75} aria-hidden="true" />;
+}
+
 function TodoComposer({ placeholder, autoFocus = false, onAdd, onCancel }) {
   const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
   const submit = async (event) => {
     event.preventDefault();
     const value = title.trim();
     if (!value) return;
-    await onAdd(value);
+    await onAdd(value, content.trim());
     setTitle("");
+    setContent("");
   };
 
   return (
-    <form className="todo-composer" onSubmit={submit}>
+    <form
+      className="todo-composer has-fields"
+      onSubmit={submit}
+      onBlur={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        if (!title.trim() && !content.trim() && onCancel) onCancel();
+      }}
+    >
       <span className="todo-composer-icon">
         <PlusIcon />
       </span>
-      <input
-        value={title}
-        autoFocus={autoFocus}
-        placeholder={placeholder}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Escape" && onCancel) onCancel();
-        }}
-        onBlur={() => {
-          if (!title.trim() && onCancel) onCancel();
-        }}
-      />
+      <div className="todo-composer-fields">
+        <input
+          value={title}
+          autoFocus={autoFocus}
+          placeholder={placeholder}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && onCancel) onCancel();
+          }}
+        />
+        <AppTextarea
+          rows={2}
+          maxLength={2000}
+          value={content}
+          placeholder="內容（選填）"
+          onChange={(e) => setContent(e.target.value)}
+        />
+      </div>
+      <button className="btn" type="submit">
+        新增
+      </button>
     </form>
   );
 }
@@ -66,10 +92,64 @@ function findNode(nodes, id) {
   return null;
 }
 
-function SortableRow({ node, selected, onToggle, onAddStep, onEdit, onDelete }) {
+function isVisibleNode(node, showAll) {
+  if (showAll || !node.isCompleted) return true;
+  return (node.children || []).some((child) => isVisibleNode(child, false));
+}
+
+function visibleChildren(node, showAll) {
+  return (node.children || []).filter((child) => isVisibleNode(child, showAll));
+}
+
+function stepCountLabel(node) {
+  const total = node.children?.length || 0;
+  if (total === 0) return null;
+  const open = (node.children || []).filter((child) => !child.isCompleted).length;
+  return open === total ? `${total} 個步驟` : `${open} / ${total} 個步驟`;
+}
+
+function TodoDetailForm({ compact = false, draft, setDraft, saving, onSubmit, onCancel }) {
+  return (
+    <form
+      className={`todo-detail-col${compact ? " is-inline" : ""}`}
+      onSubmit={onSubmit}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && onCancel) onCancel();
+      }}
+    >
+      {compact ? null : <h3>工作詳細資料</h3>}
+      <label>
+        標題
+        <input
+          value={draft.title}
+          autoFocus={compact}
+          onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+          required
+        />
+      </label>
+      <label>
+        內容
+        <AppTextarea
+          rows={compact ? 4 : 8}
+          value={draft.content}
+          placeholder="寫下這項工作的說明…"
+          onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+        />
+      </label>
+      <div className="btn-row">
+        <button className="btn" type="submit" disabled={saving}>
+          {saving ? "儲存中…" : "儲存"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function SortableRow({ node, selected, expanded, showAll, hidePreview, inlineEdit, onToggle, onToggleExpand, onAddStep, onEdit, onClose, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
-  const steps = node.children?.length || 0;
+  const steps = visibleChildren(node, showAll).length;
+  const stepLabel = stepCountLabel(node);
   const selectedClass = selected ? " is-selected" : "";
 
   return (
@@ -81,6 +161,20 @@ function SortableRow({ node, selected, onToggle, onAddStep, onEdit, onDelete }) 
       <button type="button" className="todo-grip" title="拖曳排序" aria-label="拖曳排序" {...attributes} {...listeners}>
         <GripIcon />
       </button>
+      {steps > 0 ? (
+        <button
+          type="button"
+          className="todo-expand"
+          title={expanded ? "收起步驟" : "展開步驟"}
+          aria-label={expanded ? "收起步驟" : "展開步驟"}
+          aria-expanded={expanded}
+          onClick={() => onToggleExpand(node.id)}
+        >
+          {expanded ? <ChevronDown size={16} strokeWidth={1.75} /> : <ChevronRight size={16} strokeWidth={1.75} />}
+        </button>
+      ) : (
+        <span className="todo-expand-spacer" aria-hidden="true" />
+      )}
       <button
         type="button"
         className={`todo-check${node.isCompleted ? " checked" : ""}`}
@@ -88,25 +182,45 @@ function SortableRow({ node, selected, onToggle, onAddStep, onEdit, onDelete }) 
         aria-pressed={node.isCompleted}
         onClick={() => onToggle(node)}
       />
-      <button type="button" className="todo-body" onClick={() => onEdit(node)}>
-        <span className="todo-title">{node.title}</span>
-        {node.content ? <span className="todo-note">{node.content}</span> : null}
-        {steps > 0 ? <span className="todo-step-count">{steps} 個步驟</span> : null}
-      </button>
-      <div className="todo-item-actions">
-        <button type="button" className="todo-icon-btn" title="新增步驟" aria-label="新增步驟" onClick={() => onAddStep(node.id)}>
-          <PlusIcon />
+      {inlineEdit ? (
+        <div className="todo-body">
+          <span className="todo-title">{node.title}</span>
+          {!hidePreview && node.content ? <span className="todo-note">{node.content}</span> : null}
+          {stepLabel ? <span className="todo-step-count">{stepLabel}</span> : null}
+        </div>
+      ) : (
+        <button type="button" className="todo-body" onClick={() => onEdit(node)}>
+          <span className="todo-title">{node.title}</span>
+          {!hidePreview && node.content ? <span className="todo-note">{node.content}</span> : null}
+          {stepLabel ? <span className="todo-step-count">{stepLabel}</span> : null}
         </button>
-        <button type="button" className="todo-icon-btn danger" title="刪除" aria-label="刪除" onClick={() => onDelete(node)}>
-          <TrashIcon />
-        </button>
+      )}
+      <div className="todo-item-tools">
+        {inlineEdit ? (
+          selected ? (
+            <button type="button" className="todo-icon-btn todo-edit is-on" title="關閉編輯" aria-label="關閉編輯" onClick={onClose}>
+              <CloseIcon />
+            </button>
+          ) : (
+            <button type="button" className="todo-icon-btn todo-edit" title="開啟編輯" aria-label="開啟編輯" onClick={() => onEdit(node)}>
+              <PencilIcon />
+            </button>
+          )
+        ) : null}
+        <div className="todo-item-actions">
+          <button type="button" className="todo-icon-btn" title="新增步驟" aria-label="新增步驟" onClick={() => onAddStep(node.id)}>
+            <PlusIcon />
+          </button>
+          <button type="button" className="todo-icon-btn danger" title="刪除" aria-label="刪除" onClick={() => onDelete(node)}>
+            <TrashIcon />
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 function TodoGroup({
-  issueId,
   parentId,
   nodes,
   onChange,
@@ -115,10 +229,18 @@ function TodoGroup({
   stepParentId,
   setStepParentId,
   selectedId,
-  onSelect
+  onSelect,
+  create,
+  collapsedIds,
+  onToggleExpand,
+  onExpand,
+  showAll,
+  renderInlineEditor,
+  onClose
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const ids = nodes.map((n) => n.id);
+  const visibleNodes = showAll ? nodes : nodes.filter((node) => isVisibleNode(node, false));
+  const ids = visibleNodes.map((n) => n.id);
 
   const applyTree = (tree) => onChange(tree);
 
@@ -130,8 +252,8 @@ function TodoGroup({
     }
   };
 
-  const addStep = async (parent, title) => {
-    applyTree(await api.createTodo(issueId, { parentId: parent, title, content: "" }));
+  const addStep = async (parent, title, content) => {
+    applyTree(await create({ parentId: parent, title, content }));
   };
 
   const onDragEnd = async (event) => {
@@ -143,7 +265,10 @@ function TodoGroup({
     }
     const oldIndex = ids.indexOf(active.id);
     const newIndex = ids.indexOf(over.id);
-    const orderedIds = arrayMove(ids, oldIndex, newIndex);
+    const visibleQueue = [...arrayMove(ids, oldIndex, newIndex)];
+    const orderedIds = showAll
+      ? visibleQueue
+      : nodes.map((node) => (isVisibleNode(node, false) ? visibleQueue.shift() : node.id));
     try {
       applyTree(await api.reorderTodos(active.id, { parentId: parentId ?? null, orderedIds }));
     } catch (err) {
@@ -155,19 +280,28 @@ function TodoGroup({
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className={parentId ? "todo-group nested" : "todo-group"}>
-          {nodes.map((node) => (
+          {visibleNodes.map((node) => (
             <div key={node.id} className="todo-block">
               <SortableRow
                 node={node}
                 selected={String(selectedId) === String(node.id)}
+                expanded={!collapsedIds.has(node.id)}
+                showAll={showAll}
                 onToggle={toggle}
-                onAddStep={setStepParentId}
+                onToggleExpand={onToggleExpand}
+                onAddStep={(id) => {
+                  onExpand(id);
+                  setStepParentId(id);
+                }}
+                hidePreview={Boolean(renderInlineEditor) && String(selectedId) === String(node.id)}
+                inlineEdit={Boolean(renderInlineEditor)}
                 onEdit={onSelect}
+                onClose={onClose}
                 onDelete={(item) => onDialog({ type: "delete", item })}
               />
-              {node.children?.length > 0 && (
+              {renderInlineEditor?.(node)}
+              {visibleChildren(node, showAll).length > 0 && !collapsedIds.has(node.id) && (
                 <TodoGroup
-                  issueId={issueId}
                   parentId={node.id}
                   nodes={node.children}
                   onChange={onChange}
@@ -177,15 +311,22 @@ function TodoGroup({
                   setStepParentId={setStepParentId}
                   selectedId={selectedId}
                   onSelect={onSelect}
+                  create={create}
+                  collapsedIds={collapsedIds}
+                  onToggleExpand={onToggleExpand}
+                  onExpand={onExpand}
+                  showAll={showAll}
+                  renderInlineEditor={renderInlineEditor}
+                  onClose={onClose}
                 />
               )}
               {stepParentId === node.id && (
                 <TodoComposer
                   autoFocus
                   placeholder="新增步驟"
-                  onAdd={async (title) => {
+                  onAdd={async (title, content) => {
                     try {
-                      await addStep(node.id, title);
+                      await addStep(node.id, title, content);
                       setStepParentId(null);
                     } catch (err) {
                       onError(err.message);
@@ -202,16 +343,41 @@ function TodoGroup({
   );
 }
 
-export default function TodoTree({ issueId, nodes, onChange, onError }) {
+export default function TodoTree({ nodes, onChange, onError, create, compact = false }) {
   const [dialog, setDialog] = useState(null);
   const [stepParentId, setStepParentId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [collapsedIds, setCollapsedIds] = useState(() => new Set());
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [draft, setDraft] = useState({ title: "", content: "" });
   const [saving, setSaving] = useState(false);
+  const showAll = !hideCompleted;
+  const hasVisible = (nodes || []).some((node) => isVisibleNode(node, showAll));
+
+  const toggleExpand = (id) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const expand = (id) => {
+    setCollapsedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   const selected = findNode(nodes, selectedId);
 
+  const closeDetail = () => setSelectedId(null);
+
   const openDetail = (item) => {
+    if (String(selectedId) === String(item.id)) return;
     setSelectedId(item.id);
     setDraft({ title: item.title || "", content: item.content || "" });
   };
@@ -238,14 +404,27 @@ export default function TodoTree({ issueId, nodes, onChange, onError }) {
 
   return (
     <>
-    <section className="card todo-workspace">
+    <section className={`card todo-workspace${compact ? " is-compact" : ""}`}>
       <div className="todo-list-col">
-        <h2>
-          <CheckSquare size={18} strokeWidth={1.75} aria-hidden="true" />
-          待辦
-        </h2>
+        <div className="todo-list-head">
+          <h2>
+            <CheckSquare size={18} strokeWidth={1.75} aria-hidden="true" />
+            待辦
+          </h2>
+          <button
+            type="button"
+            className={`chip todo-hide-done${hideCompleted ? " active" : ""}`}
+            aria-pressed={hideCompleted}
+            onClick={() => setHideCompleted((prev) => !prev)}
+          >
+            {hideCompleted ? <Eye size={14} strokeWidth={1.75} aria-hidden="true" /> : <EyeOff size={14} strokeWidth={1.75} aria-hidden="true" />}
+            {hideCompleted ? "顯示已完成" : "隱藏已完成"}
+          </button>
+        </div>
+        {hideCompleted && nodes?.length > 0 && !hasVisible ? (
+          <p className="todo-empty-filter">目前沒有未完成待辦，可再按「顯示已完成」查看。</p>
+        ) : null}
         <TodoGroup
-          issueId={issueId}
           parentId={null}
           nodes={nodes}
           onChange={onChange}
@@ -255,12 +434,30 @@ export default function TodoTree({ issueId, nodes, onChange, onError }) {
           setStepParentId={setStepParentId}
           selectedId={selectedId}
           onSelect={openDetail}
+          create={create}
+          collapsedIds={collapsedIds}
+          onToggleExpand={toggleExpand}
+          onExpand={expand}
+          showAll={showAll}
+          onClose={closeDetail}
+          renderInlineEditor={compact ? (node) => (
+            String(selectedId) === String(node.id) ? (
+              <TodoDetailForm
+                compact
+                draft={draft}
+                setDraft={setDraft}
+                saving={saving}
+                onSubmit={saveDetail}
+                onCancel={closeDetail}
+              />
+            ) : null
+          ) : undefined}
         />
         <TodoComposer
           placeholder="新增工作"
-          onAdd={async (title) => {
+          onAdd={async (title, content) => {
             try {
-              const tree = await api.createTodo(issueId, { parentId: null, title, content: "" });
+              const tree = await create({ parentId: null, title, content });
               onChange(tree);
             } catch (err) {
               onError(err.message);
@@ -268,30 +465,13 @@ export default function TodoTree({ issueId, nodes, onChange, onError }) {
           }}
         />
       </div>
-      {selected ? (
-        <form className="todo-detail-col" onSubmit={saveDetail}>
-          <h3>工作詳細資料</h3>
-          <label>
-            標題
-            <input
-              value={draft.title}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            內容
-            <AppTextarea
-              rows={8}
-              value={draft.content}
-              placeholder="寫下這項工作的說明…"
-              onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-            />
-          </label>
-          <button className="btn" type="submit" disabled={saving}>
-            {saving ? "儲存中…" : "儲存"}
-          </button>
-        </form>
+      {compact ? null : selected ? (
+        <TodoDetailForm
+          draft={draft}
+          setDraft={setDraft}
+          saving={saving}
+          onSubmit={saveDetail}
+        />
       ) : (
         <p className="todo-detail-empty">
           <Sparkles size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -324,4 +504,3 @@ export default function TodoTree({ issueId, nodes, onChange, onError }) {
     </>
   );
 }
-

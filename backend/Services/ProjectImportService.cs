@@ -302,6 +302,7 @@ public class ProjectImportService(AppDbContext db, ImportNotFoundCache cache)
                 }
                 else
                 {
+                    db.IssueTodos.RemoveRange(db.IssueTodos.Where(x => x.ProjectWorkItemId == row.ProjectWorkItemId));
                     db.TrackTodos.RemoveRange(db.TrackTodos.Where(x => x.ProjectWorkItemId == row.ProjectWorkItemId));
                     db.WorkHours.RemoveRange(db.WorkHours.Where(x => x.ProjectWorkItemId == row.ProjectWorkItemId));
                     db.ProjectWorkItems.Remove(row);

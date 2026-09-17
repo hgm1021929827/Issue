@@ -185,6 +185,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  workItemTodos: (projectId, id) => request(`/projects/${projectId}/work-items/${id}/todos`),
+  createWorkItemTodo: (projectId, id, payload) =>
+    request(`/projects/${projectId}/work-items/${id}/todos`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
   completeProjectItem: (projectId, id, isCompleted) =>
     request(`/projects/${projectId}/items/${id}/complete`, {
       method: "PUT",

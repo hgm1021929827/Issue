@@ -87,6 +87,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.TodoId);
             e.Property(x => x.TodoId).HasColumnName("todo_id");
             e.Property(x => x.IssueId).HasColumnName("issue_id");
+            e.Property(x => x.ProjectWorkItemId).HasColumnName("project_work_item_id");
             e.Property(x => x.ParentTodoId).HasColumnName("parent_todo_id");
             e.Property(x => x.IsCompleted).HasColumnName("is_completed");
             e.Property(x => x.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
@@ -95,6 +96,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => new { x.IssueId, x.ParentTodoId, x.SortOrder });
+            e.HasIndex(x => new { x.ProjectWorkItemId, x.ParentTodoId, x.SortOrder });
+            e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Project>(e =>

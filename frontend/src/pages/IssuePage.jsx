@@ -324,10 +324,10 @@ export default function IssuePage() {
       )}
       {!isNew && (
         <TodoTree
-          issueId={id}
           nodes={todos}
           onChange={setTodos}
           onError={setError}
+          create={(payload) => api.createTodo(id, payload)}
         />
       )}
       <AppDialog

@@ -124,7 +124,8 @@ public class TodoReorderDto
 public class TodoNodeDto
 {
     public long Id { get; set; }
-    public long IssueId { get; set; }
+    public long? IssueId { get; set; }
+    public long? ProjectWorkItemId { get; set; }
     public long? ParentId { get; set; }
     public bool IsCompleted { get; set; }
     public string Title { get; set; } = "";

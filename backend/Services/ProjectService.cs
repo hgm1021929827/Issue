@@ -136,6 +136,8 @@ public class ProjectService(AppDbContext db)
         var workCount = workItems.Count;
         var itemIds = issues.Select(x => x.ProjectIssueId).ToList();
         var workIds = workItems.Select(x => x.ProjectWorkItemId).ToList();
+        db.IssueTodos.RemoveRange(db.IssueTodos.Where(x =>
+            x.ProjectWorkItemId != null && workIds.Contains(x.ProjectWorkItemId.Value)));
         db.TrackTodos.RemoveRange(db.TrackTodos.Where(x =>
             x.ProjectId == id
             || (x.ProjectIssueId != null && itemIds.Contains(x.ProjectIssueId.Value))

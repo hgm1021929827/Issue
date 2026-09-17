@@ -325,6 +325,27 @@ public static partial class DbSeeder
               OR (issue_id IS NULL AND project_id IS NULL AND project_issue_id IS NULL AND project_work_item_id IS NOT NULL)
             )
             """);
+        SqlAddColumnIfMissing(db, "issue_todo", "project_work_item_id",
+            "ALTER TABLE [issue_todo] ADD [project_work_item_id] BIGINT NULL");
+        db.Database.ExecuteSqlRaw("""
+            IF EXISTS (
+              SELECT 1 FROM sys.columns
+              WHERE object_id = OBJECT_ID(N'dbo.issue_todo') AND name = N'issue_id' AND is_nullable = 0
+            )
+            BEGIN
+              ALTER TABLE [issue_todo] ALTER COLUMN [issue_id] BIGINT NULL;
+            END
+            """);
+        SqlAddIndexIfMissing(db, "issue_todo", "ix_issue_todo_work_item",
+            "CREATE INDEX [ix_issue_todo_work_item] ON [issue_todo] ([project_work_item_id], [parent_todo_id], [sort_order])");
+        SqlAddFkIfMissing(db, "fk_issue_todo_work_item",
+            "ALTER TABLE [issue_todo] ADD CONSTRAINT [fk_issue_todo_work_item] FOREIGN KEY ([project_work_item_id]) REFERENCES [project_work_item] ([project_work_item_id])");
+        SqlAddCheckIfMissing(db, "issue_todo", "ck_issue_todo_owner", """
+            ALTER TABLE [issue_todo] ADD CONSTRAINT [ck_issue_todo_owner] CHECK (
+              (issue_id IS NOT NULL AND project_work_item_id IS NULL)
+              OR (issue_id IS NULL AND project_work_item_id IS NOT NULL)
+            )
+            """);
     }
 
     private static void SqlAddColumnIfMissing(AppDbContext db, string table, string column, string alterSql)

@@ -9,6 +9,7 @@ import AppTextarea from "../components/AppTextarea.jsx";
 import PageTitle from "../components/PageTitle.jsx";
 import VendorSelect from "../components/VendorSelect.jsx";
 import TrackTodoList from "../components/TrackTodoList.jsx";
+import TodoTree from "../components/TodoTree.jsx";
 import WorkHourTable from "../components/WorkHourTable.jsx";
 import ImportExcelDialog from "../components/ImportExcelDialog.jsx";
 import { peekPendingImport, takePendingImport } from "../importSession.js";
@@ -98,6 +99,7 @@ export default function ProjectPage() {
   const [workItemHours, setWorkItemHours] = useState([]);
   const [workItemTracks, setWorkItemTracks] = useState([]);
   const [workItemTracksReady, setWorkItemTracksReady] = useState(false);
+  const [workItemTodos, setWorkItemTodos] = useState([]);
   const [itemHours, setItemHours] = useState([]);
   const [tab, setTab] = useState(() => {
     if (searchParams.get("item") || searchParams.get("tab") === "items") return "items";
@@ -236,14 +238,16 @@ export default function ProjectPage() {
     setSelectedWorkItem(item);
     setWorkItemTracksReady(false);
     try {
-      const [detail, hourList, trackList] = await Promise.all([
+      const [detail, hourList, trackList, todoTree] = await Promise.all([
         api.projectWorkItem(id, item.id),
         api.workItemHours(id, item.id),
-        api.workItemTrackTodos(id, item.id)
+        api.workItemTrackTodos(id, item.id),
+        api.workItemTodos(id, item.id)
       ]);
       setSelectedWorkItem(detail);
       setWorkItemHours(hourList);
       setWorkItemTracks(trackList);
+      setWorkItemTodos(todoTree);
       setWorkItemTracksReady(true);
     } catch (err) {
       setError(err.message);
@@ -854,6 +858,13 @@ export default function ProjectPage() {
                     highlightId={highlightTrackId}
                     ready={workItemTracksReady}
                   />
+                  <TodoTree
+                    compact
+                    nodes={workItemTodos}
+                    onChange={setWorkItemTodos}
+                    onError={setError}
+                    create={(payload) => api.createWorkItemTodo(id, selectedWorkItem.id, payload)}
+                  />
                 </>
               )}
             </div>
@@ -918,7 +929,7 @@ export default function ProjectPage() {
       <AppDialog
         open={Boolean(askDeleteWorkItem)}
         title="刪除工作項次"
-        message={askDeleteWorkItem ? `確定刪除工作項次「${askDeleteWorkItem.workItemCode}」？將一併刪除其工時與追蹤 TODO。` : ""}
+        message={askDeleteWorkItem ? `確定刪除工作項次「${askDeleteWorkItem.workItemCode}」？將一併刪除其工時、追蹤 TODO 與待辦。` : ""}
         confirmLabel="刪除"
         danger
         onCancel={() => setAskDeleteWorkItem(null)}
@@ -931,6 +942,7 @@ export default function ProjectPage() {
               setSelectedWorkItem(null);
               setWorkItemHours([]);
               setWorkItemTracks([]);
+              setWorkItemTodos([]);
             }
             setAskDeleteWorkItem(null);
           } catch (err) {

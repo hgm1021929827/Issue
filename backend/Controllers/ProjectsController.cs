@@ -10,7 +10,8 @@ public class ProjectsController(
     TrackTodoService tracks,
     WorkItemService workItems,
     WorkHourService hours,
-    ProjectImportService imports) : ApiControllerBase
+    ProjectImportService imports,
+    TodoService todos) : ApiControllerBase
 {
     [HttpGet("/projects")]
     public async Task<IActionResult> List([FromQuery] long? majorCategoryId) =>
@@ -136,6 +137,14 @@ public class ProjectsController(
     [HttpPost("/projects/{projectId:long}/work-items/{id:long}/track-todos")]
     public async Task<IActionResult> AddWorkItemTrack(long projectId, long id, [FromBody] TrackTodoWriteDto input) =>
         OkData(await tracks.CreateForWorkItemAsync(projectId, id, input));
+
+    [HttpGet("/projects/{projectId:long}/work-items/{id:long}/todos")]
+    public async Task<IActionResult> ListWorkItemTodos(long projectId, long id) =>
+        OkData(await todos.GetTreeForWorkItemAsync(projectId, id));
+
+    [HttpPost("/projects/{projectId:long}/work-items/{id:long}/todos")]
+    public async Task<IActionResult> AddWorkItemTodo(long projectId, long id, [FromBody] TodoWriteDto input) =>
+        OkData(await todos.CreateForWorkItemAsync(projectId, id, input));
 
     [HttpPost("/project-imports/resolve-project")]
     [RequestSizeLimit(5 * 1024 * 1024)]

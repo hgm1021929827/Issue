@@ -304,6 +304,30 @@ public static partial class DbSeeder
                           OR (issue_id IS NULL AND project_id IS NULL AND project_issue_id IS NULL AND project_work_item_id IS NOT NULL)
                         )
                         """);
+                    MySqlAddColumnIfMissing(db, "issue_todo", "project_work_item_id",
+                        "ALTER TABLE `issue_todo` ADD COLUMN `project_work_item_id` BIGINT NULL");
+                    db.Database.ExecuteSqlRaw("""
+                        SET @nullable := (
+                          SELECT IS_NULLABLE FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'issue_todo'
+                            AND COLUMN_NAME = 'issue_id'
+                        );
+                        SET @sql := IF(@nullable = 'NO', 'ALTER TABLE `issue_todo` MODIFY `issue_id` BIGINT NULL', 'SELECT 1');
+                        PREPARE stmt FROM @sql;
+                        EXECUTE stmt;
+                        DEALLOCATE PREPARE stmt;
+                        """);
+                    MySqlAddIndexIfMissing(db, "issue_todo", "ix_issue_todo_work_item",
+                        "ALTER TABLE `issue_todo` ADD KEY `ix_issue_todo_work_item` (`project_work_item_id`, `parent_todo_id`, `sort_order`)");
+                    MySqlAddFkIfMissing(db, "issue_todo", "fk_issue_todo_work_item",
+                        "ALTER TABLE `issue_todo` ADD CONSTRAINT `fk_issue_todo_work_item` FOREIGN KEY (`project_work_item_id`) REFERENCES `project_work_item` (`project_work_item_id`) ON DELETE CASCADE");
+                    MySqlAddCheckIfMissing(db, "issue_todo", "ck_issue_todo_owner", """
+                        ALTER TABLE `issue_todo` ADD CONSTRAINT `ck_issue_todo_owner` CHECK (
+                          (issue_id IS NOT NULL AND project_work_item_id IS NULL)
+                          OR (issue_id IS NULL AND project_work_item_id IS NOT NULL)
+                        )
+                        """);
     }
 
     private static void MySqlAddColumnIfMissing(AppDbContext db, string table, string column, string alterSql)
