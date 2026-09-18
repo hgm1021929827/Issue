@@ -180,8 +180,26 @@ export default function IssueImportResultPage() {
 
       {notFound.length > 0 && (
         <section className="card">
-          <h2>檔中沒有的資料</h2>
-          <p className="muted">請為每一筆選擇保留或刪除後再確認。未確認就離開時，本次新增與更新仍會保留。</p>
+          <div className="row-between import-missing-head">
+            <h2>檔中沒有的資料</h2>
+            <div className="btn-row">
+              <button
+                className="btn secondary"
+                type="button"
+                onClick={() => setDecisions(Object.fromEntries(notFound.map((row) => [String(row.id), "keep"])))}
+              >
+                一鍵保留
+              </button>
+              <button
+                className="btn secondary"
+                type="button"
+                onClick={() => setDecisions(Object.fromEntries(notFound.map((row) => [String(row.id), "delete"])))}
+              >
+                一鍵刪除
+              </button>
+            </div>
+          </div>
+          <p className="muted">請為每一筆選擇保留或刪除後再確認，也可用一鍵全部勾選。未確認就離開時，本次新增與更新仍會保留。</p>
           <ul className="import-decision-list">
             {notFound.map((row) => {
               const key = String(row.id);

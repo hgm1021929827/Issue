@@ -456,6 +456,31 @@ button:hover {
   cursor: pointer;
 }
 
+.project-item-btn.is-work-item {
+  grid-template-columns: auto minmax(0, 1fr) minmax(6.5rem, 8.5rem);
+  align-items: start;
+}
+
+.project-item-btn.is-work-item strong {
+  min-width: 0;
+}
+
+.work-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  min-width: 0;
+  text-align: right;
+}
+
+.work-item-meta .due {
+  max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+}
+
 .item-form {
   margin-top: 1rem;
   padding-top: 0.4rem;
@@ -593,20 +618,42 @@ button:hover {
 
 .project-items > .row-between {
   margin-bottom: 1.15rem;
+  flex-wrap: wrap;
 }
 
-.project-item-workspace {
+.project-items > .row-between .filters {
+  margin: 0;
+}
+
+.project-item-workspace,
+.track-todo-workspace {
   display: grid;
   grid-template-columns: minmax(16rem, 0.95fr) minmax(18rem, 1.15fr);
   gap: 0.9rem;
   align-items: start;
 }
 
-.project-item-list {
+.project-item-list,
+.track-todo-list {
   min-width: 0;
 }
 
-.project-item-detail {
+.project-item-detail,
+.track-todo-detail,
+.todo-workspace:not(.is-compact) > .todo-detail-col,
+.todo-workspace:not(.is-compact) > .todo-detail-empty {
+  min-width: 0;
+  align-self: start;
+  position: sticky;
+  top: 5.6rem;
+  max-height: calc(100dvh - 6.8rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.project-item-detail,
+.track-todo-detail {
   min-width: 0;
   background: var(--bg-soft);
   border: 1px solid var(--line-blue);
@@ -614,7 +661,8 @@ button:hover {
   padding: 0.95rem 1rem 1.1rem;
 }
 
-.project-item-detail .empty {
+.project-item-detail .empty,
+.track-todo-detail .empty {
   margin: 0;
   box-shadow: none;
 }
@@ -840,6 +888,15 @@ button:hover {
   font-size: 0.9rem;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.import-missing-head {
+  margin-bottom: 0.35rem;
+  align-items: center;
+}
+
+.import-missing-head h2 {
+  margin: 0;
 }
 
 .import-hour-card {
@@ -1771,6 +1828,7 @@ textarea:read-only:focus {
 }
 
 .track-todo-card .todo-item {
+  grid-template-columns: 18px 18px minmax(0, 1fr) auto;
   align-items: start;
   min-height: 0;
   padding: 0.6rem 0.55rem;
@@ -1798,6 +1856,12 @@ textarea:read-only:focus {
   margin-top: 1.05rem;
   padding-top: 1.05rem;
   border-top: 1px solid var(--line-blue);
+}
+
+.track-todo-detail .track-todo-form {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .track-todo-form label {
@@ -2392,8 +2456,15 @@ div.todo-body {
 
 @media (max-width: 860px) {
   :root { --cell-h: 64px; }
-  .cat-grid, .two-col, .todo-workspace:not(.is-compact), .project-item-workspace, .hours-form, .readonly-fields, .import-line.hour, .import-line.text { grid-template-columns: 1fr auto; }
+  .cat-grid, .two-col, .todo-workspace:not(.is-compact), .project-item-workspace, .track-todo-workspace, .hours-form, .readonly-fields, .import-line.hour, .import-line.text { grid-template-columns: 1fr auto; }
   .import-summary-grid { grid-template-columns: 1fr; }
   .topbar { flex-direction: column; align-items: stretch; padding: 0.85rem; }
   .topbar nav { justify-content: flex-start; }
+  .project-item-detail,
+  .track-todo-detail,
+  .todo-workspace:not(.is-compact) > .todo-detail-col,
+  .todo-workspace:not(.is-compact) > .todo-detail-empty {
+    top: 8.8rem;
+    max-height: calc(100dvh - 10rem);
+  }
 }

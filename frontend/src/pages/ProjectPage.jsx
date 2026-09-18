@@ -74,6 +74,8 @@ export default function ProjectPage() {
   const highlightTodoId = searchParams.get("todo");
   const itemRefs = useRef({});
   const workItemRefs = useRef({});
+  const itemDetailRef = useRef(null);
+  const workItemDetailRef = useRef(null);
 
   const [majors, setMajors] = useState([]);
   const [subs, setSubs] = useState([]);
@@ -101,6 +103,7 @@ export default function ProjectPage() {
   const [workItemTracks, setWorkItemTracks] = useState([]);
   const [workItemTracksReady, setWorkItemTracksReady] = useState(false);
   const [workItemTodos, setWorkItemTodos] = useState([]);
+  const [workItemStatus, setWorkItemStatus] = useState("open");
   const [projectTodos, setProjectTodos] = useState([]);
   const [itemHours, setItemHours] = useState([]);
   const [tab, setTab] = useState(() => {
@@ -195,6 +198,14 @@ export default function ProjectPage() {
   }, [highlightWorkItemId]);
 
   useEffect(() => {
+    itemDetailRef.current?.scrollTo({ top: 0 });
+  }, [editingId]);
+
+  useEffect(() => {
+    workItemDetailRef.current?.scrollTo({ top: 0 });
+  }, [selectedWorkItem?.id]);
+
+  useEffect(() => {
     if (!highlightId || items.length === 0) return;
     const found = items.find((x) => String(x.id) === String(highlightId));
     if (!found) {
@@ -235,6 +246,7 @@ export default function ProjectPage() {
       return;
     }
     setTab("workItems");
+    setWorkItemStatus("all");
     openWorkItem(found);
     const timer = window.setTimeout(() => {
       workItemRefs.current[found.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -367,6 +379,13 @@ export default function ProjectPage() {
 
   const selectedMajorName = majors.find((m) => String(m.id) === String(form.majorCategoryId))?.name || "請選擇";
   const itemMajorName = majors.find((m) => String(m.id) === String(itemForm.majorCategoryId))?.name || "請選擇";
+  const openWorkItemCount = workItems.filter((item) => !item.isCompleted).length;
+  const doneWorkItemCount = workItems.length - openWorkItemCount;
+  const visibleWorkItems = workItems.filter((item) => {
+    if (workItemStatus === "open") return !item.isCompleted;
+    if (workItemStatus === "done") return item.isCompleted;
+    return true;
+  });
 
   return (
     <div>
@@ -606,7 +625,7 @@ export default function ProjectPage() {
                 ))}
               </ul>
             </div>
-            <div className="project-item-detail">
+            <div className="project-item-detail" ref={itemDetailRef}>
               {!showItemForm && (
                 <div className="empty">
                   <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />
@@ -768,14 +787,48 @@ export default function ProjectPage() {
             <PageTitle icon={ListTodo} as="h2">
               工作項次
             </PageTitle>
+            {workItems.length > 0 && (
+              <div className="filters member-tabs" role="tablist" aria-label="工作項次完成狀態">
+                <button
+                  type="button"
+                  role="tab"
+                  className={workItemStatus === "all" ? "chip active" : "chip"}
+                  aria-selected={workItemStatus === "all"}
+                  onClick={() => setWorkItemStatus("all")}
+                >
+                  全部（{workItems.length}）
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  className={workItemStatus === "open" ? "chip active" : "chip"}
+                  aria-selected={workItemStatus === "open"}
+                  onClick={() => setWorkItemStatus("open")}
+                >
+                  未完成（{openWorkItemCount}）
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  className={workItemStatus === "done" ? "chip active" : "chip"}
+                  aria-selected={workItemStatus === "done"}
+                  onClick={() => setWorkItemStatus("done")}
+                >
+                  已完成（{doneWorkItemCount}）
+                </button>
+              </div>
+            )}
           </div>
           <div className="project-item-workspace">
             <div className="project-item-list">
               {workItems.length === 0 && (
                 <p className="muted">尚無工作項次。請從專案清單或本頁「匯入 Excel」匯入。</p>
               )}
+              {workItems.length > 0 && visibleWorkItems.length === 0 && (
+                <p className="muted">沒有符合的工作項次。</p>
+              )}
               <ul className="issue-list">
-                {workItems.map((item) => (
+                {visibleWorkItems.map((item) => (
                   <li
                     key={item.id}
                     ref={(node) => {
@@ -785,7 +838,7 @@ export default function ProjectPage() {
                   >
                     <button
                       type="button"
-                      className="project-item-btn"
+                      className="project-item-btn is-work-item"
                       onClick={() => openWorkItem(item)}
                     >
                       <DoneMark done={item.isCompleted} />
@@ -794,8 +847,10 @@ export default function ProjectPage() {
                         {item.title || "（無說明）"}
                         {item.missingKept ? <span className="tag is-kept">檔中沒有</span> : null}
                       </strong>
-                      <em className="due">{item.ownerName || "未指定負責人"}</em>
-                      <em className="due">{item.dueDate || "無預計完成日"}</em>
+                      <span className="work-item-meta">
+                        <em className="due">{item.ownerName || "未指定負責人"}</em>
+                        <em className="due">{item.dueDate || "無預計完成日"}</em>
+                      </span>
                     </button>
                     <button
                       className="todo-icon-btn danger"
@@ -810,7 +865,7 @@ export default function ProjectPage() {
                 ))}
               </ul>
             </div>
-            <div className="project-item-detail">
+            <div className="project-item-detail" ref={workItemDetailRef}>
               {!selectedWorkItem && (
                 <div className="empty">
                   <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />

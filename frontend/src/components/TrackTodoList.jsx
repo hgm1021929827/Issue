@@ -28,7 +28,7 @@ function emptyForm() {
   return { title: "", content: "", targetType: "member", targetId: "", reminderDate: "" };
 }
 
-function SortableTrackRow({ item, highlight, onToggle, onEdit, onDelete }) {
+function SortableTrackRow({ item, highlight, selected, onToggle, onEdit, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
@@ -36,7 +36,7 @@ function SortableTrackRow({ item, highlight, onToggle, onEdit, onDelete }) {
       id={`track-todo-${item.id}`}
       ref={setNodeRef}
       style={style}
-      className={`todo-item${item.isCompleted ? " is-done" : ""}${isDragging ? " is-dragging" : ""}${highlight ? " is-flash" : ""}`}
+      className={`todo-item${item.isCompleted ? " is-done" : ""}${isDragging ? " is-dragging" : ""}${highlight ? " is-flash" : ""}${selected ? " is-selected" : ""}`}
     >
       <button type="button" className="todo-grip" title="拖曳排序" aria-label="拖曳排序" {...attributes} {...listeners}>
         <GripVertical size={14} strokeWidth={1.75} aria-hidden="true" />
@@ -227,6 +227,100 @@ export default function TrackTodoList({
     save(event);
   };
 
+  const listBlock = (
+    <>
+      {items.length === 0 && !showForm && compact && (
+        <div className="empty">
+          <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />
+          <p>尚無需要追蹤的 TODO。</p>
+        </div>
+      )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={items.map((x) => x.id)} strategy={verticalListSortingStrategy}>
+          <div className="todo-list">
+            {items.map((item) => (
+              <SortableTrackRow
+                key={item.id}
+                item={item}
+                highlight={String(highlightId) === String(item.id)}
+                selected={showForm && editingId === item.id}
+                onToggle={toggle}
+                onEdit={openEdit}
+                onDelete={setAskDelete}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </>
+  );
+
+  const formBlock = showForm ? (
+    <div className="form track-todo-form">
+      <label>
+        標題
+        <input
+          required
+          maxLength={200}
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
+      </label>
+      <label>
+        內容
+        <AppTextarea rows={2} maxLength={2000} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+      </label>
+      <div className="two-col">
+        <label>
+          對象類型
+          <AppSelect
+            value={form.targetType}
+            options={[
+              { value: "member", label: "內部成員" },
+              { value: "clientContact", label: "客戶窗口" }
+            ]}
+            onChange={(targetType) => {
+              setForm({ ...form, targetType, targetId: "" });
+              refreshHint(targetType, "");
+            }}
+          />
+        </label>
+        <label>
+          追蹤對象
+          <AppSelect
+            value={form.targetId}
+            placeholder="請選擇"
+            options={[{ value: "", label: "請選擇" }, ...targetOptions]}
+            onChange={(targetId) => {
+              setForm({ ...form, targetId });
+              refreshHint(form.targetType, targetId);
+            }}
+          />
+        </label>
+      </div>
+      <label>
+        提醒日
+        <AppDateField value={form.reminderDate} onChange={(reminderDate) => setForm({ ...form, reminderDate })} />
+      </label>
+      {hint && <p className="muted">{hint}</p>}
+      <div className="btn-row">
+        <button className="btn" type="button" onClick={save}>
+          儲存
+        </button>
+        <button
+          className="btn"
+          type="button"
+          onClick={() => {
+            setShowForm(false);
+            setEditingId(null);
+          }}
+        >
+          取消
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <section
       className={`card track-todo-card${compact ? " is-compact" : ""}`}
@@ -242,90 +336,21 @@ export default function TrackTodoList({
         </button>
       </div>
       {missing && <p className="banner error">找不到該筆需要追蹤的 TODO</p>}
-      {items.length === 0 && !showForm && (
-        <div className="empty">
-          <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />
-          <p>尚無需要追蹤的 TODO。</p>
-        </div>
-      )}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={items.map((x) => x.id)} strategy={verticalListSortingStrategy}>
-          <div className="todo-list">
-            {items.map((item) => (
-              <SortableTrackRow
-                key={item.id}
-                item={item}
-                highlight={String(highlightId) === String(item.id)}
-                onToggle={toggle}
-                onEdit={openEdit}
-                onDelete={setAskDelete}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-      {showForm && (
-        <div className="form track-todo-form">
-          <label>
-            標題
-            <input
-              required
-              maxLength={200}
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-          </label>
-          <label>
-            內容
-            <AppTextarea rows={2} maxLength={2000} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-          </label>
-          <div className="two-col">
-            <label>
-              對象類型
-              <AppSelect
-                value={form.targetType}
-                options={[
-                  { value: "member", label: "內部成員" },
-                  { value: "clientContact", label: "客戶窗口" }
-                ]}
-                onChange={(targetType) => {
-                  setForm({ ...form, targetType, targetId: "" });
-                  refreshHint(targetType, "");
-                }}
-              />
-            </label>
-            <label>
-              追蹤對象
-              <AppSelect
-                value={form.targetId}
-                placeholder="請選擇"
-                options={[{ value: "", label: "請選擇" }, ...targetOptions]}
-                onChange={(targetId) => {
-                  setForm({ ...form, targetId });
-                  refreshHint(form.targetType, targetId);
-                }}
-              />
-            </label>
-          </div>
-          <label>
-            提醒日
-            <AppDateField value={form.reminderDate} onChange={(reminderDate) => setForm({ ...form, reminderDate })} />
-          </label>
-          {hint && <p className="muted">{hint}</p>}
-          <div className="btn-row">
-            <button className="btn" type="button" onClick={save}>
-              儲存
-            </button>
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                setShowForm(false);
-                setEditingId(null);
-              }}
-            >
-              取消
-            </button>
+      {compact ? (
+        <>
+          {listBlock}
+          {formBlock}
+        </>
+      ) : (
+        <div className="track-todo-workspace">
+          <div className="track-todo-list">{listBlock}</div>
+          <div className="track-todo-detail">
+            {formBlock || (
+              <div className="empty">
+                <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />
+                <p>{items.length === 0 ? "尚無需要追蹤的 TODO。請按新增。" : "請選擇左側項目，或按新增。"}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
