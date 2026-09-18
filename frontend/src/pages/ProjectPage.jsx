@@ -71,6 +71,7 @@ export default function ProjectPage() {
   const highlightId = searchParams.get("item");
   const highlightWorkItemId = searchParams.get("workItem");
   const highlightTrackId = searchParams.get("trackTodo");
+  const highlightTodoId = searchParams.get("todo");
   const itemRefs = useRef({});
   const workItemRefs = useRef({});
 
@@ -100,10 +101,11 @@ export default function ProjectPage() {
   const [workItemTracks, setWorkItemTracks] = useState([]);
   const [workItemTracksReady, setWorkItemTracksReady] = useState(false);
   const [workItemTodos, setWorkItemTodos] = useState([]);
+  const [projectTodos, setProjectTodos] = useState([]);
   const [itemHours, setItemHours] = useState([]);
   const [tab, setTab] = useState(() => {
     if (searchParams.get("item") || searchParams.get("tab") === "items") return "items";
-    if (searchParams.get("tab") === "content") return "content";
+    if (searchParams.get("todo") || searchParams.get("tab") === "content") return "content";
     return "workItems";
   });
 
@@ -155,15 +157,17 @@ export default function ProjectPage() {
           });
           return;
         }
-        const [project, trackList, workItemList] = await Promise.all([
+        const [project, trackList, workItemList, todoList] = await Promise.all([
           api.project(id),
           api.projectTrackTodos(id),
-          api.projectWorkItems(id)
+          api.projectWorkItems(id),
+          api.projectTodos(id)
         ]);
         await loadSubs(project.majorCategoryId, project.subCategoryId, setSubs);
         applyProject(project);
         setTracks(trackList);
         setWorkItems(workItemList);
+        setProjectTodos(todoList);
         setTracksReady(true);
       } catch (err) {
         setError(err.message);
@@ -174,13 +178,17 @@ export default function ProjectPage() {
 
   useEffect(() => {
     if (searchParams.get("item") || searchParams.get("tab") === "items") setTab("items");
-    else if (searchParams.get("tab") === "content") setTab("content");
+    else if (searchParams.get("todo") || searchParams.get("tab") === "content") setTab("content");
     else setTab("workItems");
   }, [id]);
 
   useEffect(() => {
     if (highlightId) setTab("items");
   }, [highlightId]);
+
+  useEffect(() => {
+    if (highlightTodoId) setTab("content");
+  }, [highlightTodoId]);
 
   useEffect(() => {
     if (highlightWorkItemId) setTab("workItems");
@@ -512,6 +520,23 @@ export default function ProjectPage() {
       )}
 
       {!isNew && tab === "content" && (
+        <>
+          <div className="btn-row" style={{ margin: "0 0 1rem" }}>
+            <button
+              className="btn"
+              type="button"
+              disabled={!form.clientCompanyId}
+              onClick={() => {
+                if (!form.clientCompanyId) {
+                  setError("請先設定廠商");
+                  return;
+                }
+                navigate(`/appointments/new?project=${id}`);
+              }}
+            >
+              新增預約連線
+            </button>
+          </div>
         <TrackTodoList
           items={tracks}
           onChange={setTracks}
@@ -521,6 +546,14 @@ export default function ProjectPage() {
           highlightId={!highlightId ? highlightTrackId : null}
           ready={tracksReady}
         />
+        <TodoTree
+          nodes={projectTodos}
+          onChange={setProjectTodos}
+          onError={setError}
+          create={(payload) => api.createProjectTodo(id, payload)}
+          highlightId={highlightTodoId}
+        />
+        </>
       )}
 
       {!isNew && tab === "items" && (
@@ -890,7 +923,7 @@ export default function ProjectPage() {
       <AppDialog
         open={askDelete}
         title="刪除專案"
-        message={`確定刪除專案「${form.code || form.name}」？將一併刪除 ${form.itemCount} 筆專案議題、${form.workItemCount || workItems.length} 筆工作項次${tracks.length ? `、${tracks.length} 筆專案上的需要追蹤的 TODO` : ""}。`}
+        message={`確定刪除專案「${form.code || form.name}」？將一併刪除 ${form.itemCount} 筆專案議題、${form.workItemCount || workItems.length} 筆工作項次${tracks.length ? `、${tracks.length} 筆專案上的需要追蹤的 TODO` : ""}${projectTodos.length ? "、專案待辦" : ""}。`}
         confirmLabel="刪除"
         danger
         onCancel={() => setAskDelete(false)}

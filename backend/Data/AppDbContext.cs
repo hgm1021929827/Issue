@@ -19,6 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TrackTodo> TrackTodos => Set<TrackTodo>();
     public DbSet<ProjectWorkItem> ProjectWorkItems => Set<ProjectWorkItem>();
     public DbSet<WorkHour> WorkHours => Set<WorkHour>();
+    public DbSet<ConnectionAppointment> ConnectionAppointments => Set<ConnectionAppointment>();
+    public DbSet<ConnectionAppointmentItem> ConnectionAppointmentItems => Set<ConnectionAppointmentItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,6 +89,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.TodoId);
             e.Property(x => x.TodoId).HasColumnName("todo_id");
             e.Property(x => x.IssueId).HasColumnName("issue_id");
+            e.Property(x => x.ProjectId).HasColumnName("project_id");
             e.Property(x => x.ProjectWorkItemId).HasColumnName("project_work_item_id");
             e.Property(x => x.ParentTodoId).HasColumnName("parent_todo_id");
             e.Property(x => x.IsCompleted).HasColumnName("is_completed");
@@ -96,8 +99,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => new { x.IssueId, x.ParentTodoId, x.SortOrder });
+            e.HasIndex(x => new { x.ProjectId, x.ParentTodoId, x.SortOrder });
             e.HasIndex(x => new { x.ProjectWorkItemId, x.ParentTodoId, x.SortOrder });
             e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -288,6 +293,51 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.ProjectWorkItem).WithMany().HasForeignKey(x => x.ProjectWorkItemId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.ProjectIssue).WithMany().HasForeignKey(x => x.ProjectIssueId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ConnectionAppointment>(e =>
+        {
+            e.ToTable("connection_appointment");
+            e.HasKey(x => x.ConnectionAppointmentId);
+            e.Property(x => x.ConnectionAppointmentId).HasColumnName("connection_appointment_id");
+            e.Property(x => x.ClientCompanyId).HasColumnName("client_company_id");
+            e.Property(x => x.ClientContactId).HasColumnName("client_contact_id");
+            e.Property(x => x.ContactChannelId).HasColumnName("contact_channel_id");
+            e.Property(x => x.SubCategoryId).HasColumnName("sub_category_id");
+            e.Property(x => x.AppointmentDate).HasColumnName("appointment_date");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasIndex(x => new { x.ClientCompanyId, x.AppointmentDate });
+            e.HasIndex(x => x.ClientContactId);
+            e.HasIndex(x => x.ContactChannelId);
+            e.HasIndex(x => x.SubCategoryId);
+            e.HasOne(x => x.ClientCompany).WithMany().HasForeignKey(x => x.ClientCompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ClientContact).WithMany().HasForeignKey(x => x.ClientContactId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.ContactChannel).WithMany().HasForeignKey(x => x.ContactChannelId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.SubCategory).WithMany().HasForeignKey(x => x.SubCategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(x => x.Items).WithOne(x => x.Appointment).HasForeignKey(x => x.ConnectionAppointmentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ConnectionAppointmentItem>(e =>
+        {
+            e.ToTable("connection_appointment_item");
+            e.HasKey(x => x.ItemId);
+            e.Property(x => x.ItemId).HasColumnName("item_id");
+            e.Property(x => x.ConnectionAppointmentId).HasColumnName("connection_appointment_id");
+            e.Property(x => x.IssueId).HasColumnName("issue_id");
+            e.Property(x => x.ProjectId).HasColumnName("project_id");
+            e.Property(x => x.TodoId).HasColumnName("todo_id");
+            e.Property(x => x.SortOrder).HasColumnName("sort_order");
+            e.HasIndex(x => new { x.ConnectionAppointmentId, x.SortOrder });
+            e.HasIndex(x => new { x.ConnectionAppointmentId, x.IssueId }).IsUnique()
+                .HasFilter("[issue_id] IS NOT NULL");
+            e.HasIndex(x => new { x.ConnectionAppointmentId, x.ProjectId }).IsUnique()
+                .HasFilter("[project_id] IS NOT NULL");
+            e.HasIndex(x => new { x.ConnectionAppointmentId, x.TodoId }).IsUnique()
+                .HasFilter("[todo_id] IS NOT NULL");
+            e.HasOne(x => x.Issue).WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Todo).WithMany().HasForeignKey(x => x.TodoId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

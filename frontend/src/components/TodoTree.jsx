@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -92,6 +92,15 @@ function findNode(nodes, id) {
   return null;
 }
 
+function findAncestors(nodes, id, path = []) {
+  for (const node of nodes) {
+    if (String(node.id) === String(id)) return path;
+    const nested = findAncestors(node.children || [], id, [...path, node.id]);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 function isVisibleNode(node, showAll) {
   if (showAll || !node.isCompleted) return true;
   return (node.children || []).some((child) => isVisibleNode(child, false));
@@ -154,6 +163,7 @@ function SortableRow({ node, selected, expanded, showAll, hidePreview, inlineEdi
 
   return (
     <div
+      id={`todo-${node.id}`}
       ref={setNodeRef}
       style={style}
       className={`todo-item${node.isCompleted ? " is-done" : ""}${isDragging ? " is-dragging" : ""}${selectedClass}`}
@@ -343,7 +353,7 @@ function TodoGroup({
   );
 }
 
-export default function TodoTree({ nodes, onChange, onError, create, compact = false }) {
+export default function TodoTree({ nodes, onChange, onError, create, compact = false, highlightId = null }) {
   const [dialog, setDialog] = useState(null);
   const [stepParentId, setStepParentId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -353,6 +363,27 @@ export default function TodoTree({ nodes, onChange, onError, create, compact = f
   const [saving, setSaving] = useState(false);
   const showAll = !hideCompleted;
   const hasVisible = (nodes || []).some((node) => isVisibleNode(node, showAll));
+
+  useEffect(() => {
+    if (!highlightId) return;
+    const node = findNode(nodes || [], highlightId);
+    if (!node) return;
+    if (node.isCompleted) setHideCompleted(false);
+    const ancestors = findAncestors(nodes || [], highlightId) || [];
+    if (ancestors.length > 0) {
+      setCollapsedIds((prev) => {
+        const next = new Set(prev);
+        ancestors.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+    setSelectedId(node.id);
+    setDraft({ title: node.title || "", content: node.content || "" });
+    const timer = window.setTimeout(() => {
+      document.getElementById(`todo-${highlightId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [highlightId, nodes]);
 
   const toggleExpand = (id) => {
     setCollapsedIds((prev) => {

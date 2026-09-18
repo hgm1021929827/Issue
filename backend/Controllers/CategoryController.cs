@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Issue.Api.Controllers;
 
 [ApiController]
-public class CategoryController(CategoryService categories) : ApiControllerBase
+public class CategoryController(CategoryService categories, AppointmentService appointments) : ApiControllerBase
 {
     [HttpGet("/majorCategories")]
     public async Task<IActionResult> Major() => OkData(await categories.ListMajorAsync());
@@ -39,4 +39,7 @@ public class CategoryController(CategoryService categories) : ApiControllerBase
 
     [HttpDelete("/subCategories/{id:long}")]
     public async Task<IActionResult> Delete(long id) => OkData(await categories.DeleteSubAsync(id));
+
+    [HttpGet("/categories/appointment-status")]
+    public async Task<IActionResult> AppointmentStatus() => OkData(await appointments.GetStatusOptionsAsync());
 }

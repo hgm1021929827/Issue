@@ -89,6 +89,25 @@ export const api = {
     request(`/todos/${id}/complete`, { method: "PUT", body: JSON.stringify({ isCompleted }) }),
   reorderTodos: (id, payload) => request(`/todos/${id}/reorder`, { method: "PUT", body: JSON.stringify(payload) }),
   deleteTodo: (id) => request(`/todos/${id}`, { method: "DELETE" }),
+  projectTodos: (projectId) => request(`/projects/${projectId}/todos`),
+  createProjectTodo: (projectId, payload) =>
+    request(`/projects/${projectId}/todos`, { method: "POST", body: JSON.stringify(payload) }),
+  appointmentStatus: () => request("/categories/appointment-status"),
+  appointments: () => request("/appointments"),
+  futureAppointments: (clientCompanyId, excludeId) => {
+    const params = new URLSearchParams({ clientCompanyId: String(clientCompanyId) });
+    if (excludeId) params.set("excludeId", String(excludeId));
+    return request(`/appointments/future?${params}`);
+  },
+  appointment: (id) => request(`/appointments/${id}`),
+  createAppointment: (payload) => request("/appointments", { method: "POST", body: JSON.stringify(payload) }),
+  updateAppointment: (id, payload) =>
+    request(`/appointments/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deleteAppointment: (id) => request(`/appointments/${id}`, { method: "DELETE" }),
+  addAppointmentItems: (id, items) =>
+    request(`/appointments/${id}/items`, { method: "POST", body: JSON.stringify({ items }) }),
+  deleteAppointmentItem: (id, itemId) =>
+    request(`/appointments/${id}/items/${itemId}`, { method: "DELETE" }),
   projects: (majorCategoryId) =>
     request(majorCategoryId ? `/projects?majorCategoryId=${majorCategoryId}` : "/projects"),
   project: (id) => request(`/projects/${id}`),

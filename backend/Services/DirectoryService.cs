@@ -132,10 +132,12 @@ public class DirectoryService(AppDbContext db)
         var trackCount = await db.TrackTodos.CountAsync(x =>
             x.ClientContactId != null
             && db.ClientContacts.Any(c => c.ClientContactId == x.ClientContactId && c.ClientCompanyId == id));
+        var appointmentCount = await db.ConnectionAppointments.CountAsync(x => x.ClientCompanyId == id);
         var parts = new List<string>();
         if (projectCount > 0) parts.Add($"{projectCount} 筆專案");
         if (issueCount > 0) parts.Add($"{issueCount} 筆正式議題");
         if (trackCount > 0) parts.Add($"{trackCount} 筆需要追蹤的 TODO");
+        if (appointmentCount > 0) parts.Add($"{appointmentCount} 筆預約連線");
         if (parts.Count > 0)
         {
             throw new AppException(409, "使用中，共 " + string.Join("、", parts));
@@ -148,11 +150,17 @@ public class DirectoryService(AppDbContext db)
     {
         await EnsureCompany(companyId);
         var rows = await db.ClientContacts
+            .Include(x => x.Channels)
             .Where(x => x.ClientCompanyId == companyId)
             .OrderBy(x => x.ContactName)
             .ThenBy(x => x.ClientContactId)
             .ToListAsync();
-        return rows.Select(x => new ClientContactListItemDto { Id = x.ClientContactId, Name = x.ContactName }).ToList();
+        return rows.Select(x => new ClientContactListItemDto
+        {
+            Id = x.ClientContactId,
+            Name = x.ContactName,
+            Channels = x.Channels.OrderBy(c => c.ContactChannelId).Select(ToChannelDto).ToList()
+        }).ToList();
     }
 
     public async Task<List<ClientContactDto>> CreateContactAsync(long companyId, ClientContactWriteDto input)
@@ -187,9 +195,13 @@ public class DirectoryService(AppDbContext db)
         var item = await db.ClientContacts.FirstOrDefaultAsync(x => x.ClientContactId == id && x.ClientCompanyId == companyId)
             ?? throw new AppException(404, "找不到該客戶窗口");
         var trackCount = await db.TrackTodos.CountAsync(x => x.ClientContactId == id);
-        if (trackCount > 0)
+        var appointmentCount = await db.ConnectionAppointments.CountAsync(x => x.ClientContactId == id);
+        if (trackCount > 0 || appointmentCount > 0)
         {
-            throw new AppException(409, $"使用中，共 {trackCount} 筆需要追蹤的 TODO");
+            var parts = new List<string>();
+            if (trackCount > 0) parts.Add($"{trackCount} 筆需要追蹤的 TODO");
+            if (appointmentCount > 0) parts.Add($"{appointmentCount} 筆預約連線");
+            throw new AppException(409, "使用中，共 " + string.Join("、", parts));
         }
         db.ClientContacts.Remove(item);
         await db.SaveChangesAsync();
@@ -226,6 +238,11 @@ public class DirectoryService(AppDbContext db)
         await RequireContact(companyId, contactId);
         var item = await db.ContactChannels.FirstOrDefaultAsync(x => x.ContactChannelId == channelId && x.ClientContactId == contactId)
             ?? throw new AppException(404, "找不到該聯絡資料");
+        var appointmentCount = await db.ConnectionAppointments.CountAsync(x => x.ContactChannelId == channelId);
+        if (appointmentCount > 0)
+        {
+            throw new AppException(409, $"使用中，共 {appointmentCount} 筆預約連線");
+        }
         db.ContactChannels.Remove(item);
         await db.SaveChangesAsync();
         return await ListChannelsAsync(contactId);

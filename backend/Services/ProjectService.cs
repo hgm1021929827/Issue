@@ -136,6 +136,14 @@ public class ProjectService(AppDbContext db)
         var workCount = workItems.Count;
         var itemIds = issues.Select(x => x.ProjectIssueId).ToList();
         var workIds = workItems.Select(x => x.ProjectWorkItemId).ToList();
+        var projectTodoIds = db.IssueTodos.Where(x => x.ProjectId == id).Select(x => x.TodoId).ToList();
+        var workTodoIds = db.IssueTodos.Where(x =>
+            x.ProjectWorkItemId != null && workIds.Contains(x.ProjectWorkItemId.Value)).Select(x => x.TodoId).ToList();
+        db.ConnectionAppointmentItems.RemoveRange(db.ConnectionAppointmentItems.Where(x =>
+            x.ProjectId == id
+            || (x.TodoId != null && projectTodoIds.Contains(x.TodoId.Value))
+            || (x.TodoId != null && workTodoIds.Contains(x.TodoId.Value))));
+        db.IssueTodos.RemoveRange(db.IssueTodos.Where(x => x.ProjectId == id));
         db.IssueTodos.RemoveRange(db.IssueTodos.Where(x =>
             x.ProjectWorkItemId != null && workIds.Contains(x.ProjectWorkItemId.Value)));
         db.TrackTodos.RemoveRange(db.TrackTodos.Where(x =>

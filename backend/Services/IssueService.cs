@@ -125,6 +125,9 @@ public class IssueService(AppDbContext db)
             ?? throw new AppException(404, "找不到該議題");
         db.WorkHours.RemoveRange(db.WorkHours.Where(x => x.IssueId == id));
         db.TrackTodos.RemoveRange(db.TrackTodos.Where(x => x.IssueId == id));
+        var todoIds = db.IssueTodos.Where(x => x.IssueId == id).Select(x => x.TodoId).ToList();
+        db.ConnectionAppointmentItems.RemoveRange(db.ConnectionAppointmentItems.Where(x =>
+            x.IssueId == id || (x.TodoId != null && todoIds.Contains(x.TodoId.Value))));
         var todos = db.IssueTodos.Where(x => x.IssueId == id);
         db.IssueTodos.RemoveRange(todos);
         db.IssuePlans.RemoveRange(db.IssuePlans.Where(x => x.IssueId == id));
@@ -184,6 +187,17 @@ public class IssueService(AppDbContext db)
             .ThenBy(x => x.SortOrder)
             .ToListAsync();
         items.AddRange(trackRows.Select(ToTrackCalendarItem));
+
+        var appointmentRows = await db.ConnectionAppointments
+            .Include(x => x.ClientCompany)
+            .Include(x => x.ClientContact)
+            .Include(x => x.ContactChannel)
+            .Include(x => x.SubCategory).ThenInclude(x => x!.MajorCategory)
+            .Where(x => x.AppointmentDate != null && x.AppointmentDate >= start && x.AppointmentDate < end)
+            .OrderBy(x => x.AppointmentDate)
+            .ThenBy(x => x.ConnectionAppointmentId)
+            .ToListAsync();
+        items.AddRange(appointmentRows.Select(ToAppointmentCalendarItem));
         return items;
     }
 
@@ -424,6 +438,29 @@ public class IssueService(AppDbContext db)
             Date = date,
             DueDate = date,
             MajorCategoryId = x.Project?.MajorCategoryId ?? 0,
+            MajorCategoryColor = color,
+            SubCategoryColor = color
+        };
+    }
+
+    private static IssueCalendarItemDto ToAppointmentCalendarItem(ConnectionAppointment x)
+    {
+        var date = x.AppointmentDate!.Value;
+        var color = x.SubCategory?.MajorCategory?.ColorHex
+            ?? x.SubCategory?.ColorHex
+            ?? "#8FA8C8";
+        return new IssueCalendarItemDto
+        {
+            Id = x.ConnectionAppointmentId,
+            Source = "appointment",
+            Kind = "appointment",
+            Label = x.SubCategory?.SubCategoryName ?? "預約",
+            IssueNo = x.ClientCompany?.CompanyName ?? "",
+            Title = x.ClientCompany?.CompanyName ?? "",
+            Content = string.Join(" · ", new[] { x.ClientContact?.ContactName, AppointmentService.FormatChannel(x.ContactChannel) }.Where(v => !string.IsNullOrWhiteSpace(v))),
+            Date = date,
+            DueDate = date,
+            MajorCategoryId = x.SubCategory?.MajorCategoryId ?? 0,
             MajorCategoryColor = color,
             SubCategoryColor = color
         };

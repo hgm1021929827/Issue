@@ -8,22 +8,36 @@ namespace Issue.Api.Services;
 
 public class TodoService(AppDbContext db)
 {
+    private readonly record struct TodoOwner(long? IssueId, long? ProjectId, long? WorkItemId);
+
     public Task<List<TodoNodeDto>> GetTreeAsync(long issueId) =>
-        GetTreeByOwnerAsync(issueId, null);
+        GetTreeByOwnerAsync(new TodoOwner(issueId, null, null));
+
+    public async Task<List<TodoNodeDto>> GetTreeForProjectAsync(long projectId)
+    {
+        await EnsureProject(projectId);
+        return await GetTreeByOwnerAsync(new TodoOwner(null, projectId, null));
+    }
 
     public async Task<List<TodoNodeDto>> GetTreeForWorkItemAsync(long projectId, long workItemId)
     {
         await EnsureWorkItem(projectId, workItemId);
-        return await GetTreeByOwnerAsync(null, workItemId);
+        return await GetTreeByOwnerAsync(new TodoOwner(null, null, workItemId));
     }
 
     public Task<List<TodoNodeDto>> CreateAsync(long issueId, TodoWriteDto input) =>
-        CreateForOwnerAsync(issueId, null, input);
+        CreateForOwnerAsync(new TodoOwner(issueId, null, null), input);
+
+    public async Task<List<TodoNodeDto>> CreateForProjectAsync(long projectId, TodoWriteDto input)
+    {
+        await EnsureProject(projectId);
+        return await CreateForOwnerAsync(new TodoOwner(null, projectId, null), input);
+    }
 
     public async Task<List<TodoNodeDto>> CreateForWorkItemAsync(long projectId, long workItemId, TodoWriteDto input)
     {
         await EnsureWorkItem(projectId, workItemId);
-        return await CreateForOwnerAsync(null, workItemId, input);
+        return await CreateForOwnerAsync(new TodoOwner(null, null, workItemId), input);
     }
 
     public async Task<List<TodoNodeDto>> UpdateAsync(long id, TodoUpdateDto input)
@@ -33,7 +47,7 @@ public class TodoService(AppDbContext db)
         todo.Content = input.Content?.Trim() ?? "";
         todo.UpdatedAt = DateTime.Now;
         await db.SaveChangesAsync();
-        return await GetTreeByOwnerAsync(todo.IssueId, todo.ProjectWorkItemId);
+        return await GetTreeByOwnerAsync(OwnerOf(todo));
     }
 
     public async Task<List<TodoNodeDto>> SetCompletedAsync(long id, bool isCompleted)
@@ -41,7 +55,7 @@ public class TodoService(AppDbContext db)
         var todo = await GetTodo(id);
         if (todo.IsCompleted == isCompleted)
         {
-            return await GetTreeByOwnerAsync(todo.IssueId, todo.ProjectWorkItemId);
+            return await GetTreeByOwnerAsync(OwnerOf(todo));
         }
 
         todo.IsCompleted = isCompleted;
@@ -51,7 +65,7 @@ public class TodoService(AppDbContext db)
             await CascadeCompleteParentsAsync(todo);
         }
         await db.SaveChangesAsync();
-        return await GetTreeByOwnerAsync(todo.IssueId, todo.ProjectWorkItemId);
+        return await GetTreeByOwnerAsync(OwnerOf(todo));
     }
 
     public async Task<List<TodoNodeDto>> ReorderAsync(long id, TodoReorderDto input)
@@ -62,7 +76,7 @@ public class TodoService(AppDbContext db)
             throw new AppException(409, "本輪僅支援同層排序，不可改掛父項");
         }
 
-        var siblings = await OwnerQuery(todo.IssueId, todo.ProjectWorkItemId)
+        var siblings = await OwnerQuery(OwnerOf(todo))
             .Where(x => x.ParentTodoId == input.ParentId)
             .ToListAsync();
         var existingIds = siblings.Select(x => x.TodoId).OrderBy(x => x).ToList();
@@ -79,26 +93,27 @@ public class TodoService(AppDbContext db)
             row.UpdatedAt = DateTime.Now;
         }
         await db.SaveChangesAsync();
-        return await GetTreeByOwnerAsync(todo.IssueId, todo.ProjectWorkItemId);
+        return await GetTreeByOwnerAsync(OwnerOf(todo));
     }
 
     public async Task<List<TodoNodeDto>> DeleteAsync(long id)
     {
         var todo = await GetTodo(id);
-        var issueId = todo.IssueId;
-        var workItemId = todo.ProjectWorkItemId;
-        var all = await OwnerQuery(issueId, workItemId).ToListAsync();
+        var owner = OwnerOf(todo);
+        var all = await OwnerQuery(owner).ToListAsync();
         var removeIds = new HashSet<long>();
         CollectDescendants(all, id, removeIds);
         removeIds.Add(id);
+        db.ConnectionAppointmentItems.RemoveRange(
+            db.ConnectionAppointmentItems.Where(x => x.TodoId != null && removeIds.Contains(x.TodoId.Value)));
         db.IssueTodos.RemoveRange(all.Where(x => removeIds.Contains(x.TodoId)));
         await db.SaveChangesAsync();
-        return await GetTreeByOwnerAsync(issueId, workItemId);
+        return await GetTreeByOwnerAsync(owner);
     }
 
-    private async Task<List<TodoNodeDto>> CreateForOwnerAsync(long? issueId, long? workItemId, TodoWriteDto input)
+    private async Task<List<TodoNodeDto>> CreateForOwnerAsync(TodoOwner owner, TodoWriteDto input)
     {
-        if (issueId is long iid)
+        if (owner.IssueId is long iid)
         {
             await EnsureIssue(iid);
         }
@@ -108,20 +123,21 @@ public class TodoService(AppDbContext db)
         {
             var parent = await db.IssueTodos.FirstOrDefaultAsync(x => x.TodoId == parentId)
                 ?? throw new AppException(404, "找不到父 TODO");
-            if (parent.IssueId != issueId || parent.ProjectWorkItemId != workItemId)
+            if (parent.IssueId != owner.IssueId || parent.ProjectId != owner.ProjectId || parent.ProjectWorkItemId != owner.WorkItemId)
             {
                 throw new AppException(400, "父 TODO 不屬於此工作");
             }
         }
 
-        var maxSort = await OwnerQuery(issueId, workItemId)
+        var maxSort = await OwnerQuery(owner)
             .Where(x => x.ParentTodoId == input.ParentId)
             .Select(x => (int?)x.SortOrder).MaxAsync() ?? 0;
         var now = DateTime.Now;
         db.IssueTodos.Add(new IssueTodo
         {
-            IssueId = issueId,
-            ProjectWorkItemId = workItemId,
+            IssueId = owner.IssueId,
+            ProjectId = owner.ProjectId,
+            ProjectWorkItemId = owner.WorkItemId,
             ParentTodoId = input.ParentId,
             Title = title,
             Content = input.Content?.Trim() ?? "",
@@ -130,29 +146,34 @@ public class TodoService(AppDbContext db)
             UpdatedAt = now
         });
         await db.SaveChangesAsync();
-        return await GetTreeByOwnerAsync(issueId, workItemId);
+        return await GetTreeByOwnerAsync(owner);
     }
 
-    private async Task<List<TodoNodeDto>> GetTreeByOwnerAsync(long? issueId, long? workItemId)
+    private async Task<List<TodoNodeDto>> GetTreeByOwnerAsync(TodoOwner owner)
     {
-        if (issueId is long iid)
+        if (owner.IssueId is long iid)
         {
             await EnsureIssue(iid);
         }
 
-        var rows = await OwnerQuery(issueId, workItemId)
+        var rows = await OwnerQuery(owner)
             .OrderBy(x => x.SortOrder).ThenBy(x => x.TodoId).ToListAsync();
         return BuildTree(rows, null);
     }
 
-    private IQueryable<IssueTodo> OwnerQuery(long? issueId, long? workItemId)
+    private IQueryable<IssueTodo> OwnerQuery(TodoOwner owner)
     {
-        if (issueId is long iid)
+        if (owner.IssueId is long iid)
         {
             return db.IssueTodos.Where(x => x.IssueId == iid);
         }
 
-        return db.IssueTodos.Where(x => x.ProjectWorkItemId == workItemId);
+        if (owner.ProjectId is long pid)
+        {
+            return db.IssueTodos.Where(x => x.ProjectId == pid);
+        }
+
+        return db.IssueTodos.Where(x => x.ProjectWorkItemId == owner.WorkItemId);
     }
 
     private async Task CascadeCompleteParentsAsync(IssueTodo todo)
@@ -162,7 +183,7 @@ public class TodoService(AppDbContext db)
             return;
         }
 
-        var siblings = await OwnerQuery(todo.IssueId, todo.ProjectWorkItemId)
+        var siblings = await OwnerQuery(OwnerOf(todo))
             .Where(x => x.ParentTodoId == todo.ParentTodoId)
             .ToListAsync();
         if (!siblings.All(s => s.IsCompleted))
@@ -189,6 +210,14 @@ public class TodoService(AppDbContext db)
         }
     }
 
+    private async Task EnsureProject(long projectId)
+    {
+        if (!await db.Projects.AnyAsync(x => x.ProjectId == projectId))
+        {
+            throw new AppException(404, "找不到該專案");
+        }
+    }
+
     private async Task EnsureWorkItem(long projectId, long workItemId)
     {
         if (!await db.ProjectWorkItems.AnyAsync(x => x.ProjectWorkItemId == workItemId && x.ProjectId == projectId))
@@ -202,6 +231,9 @@ public class TodoService(AppDbContext db)
         return await db.IssueTodos.FirstOrDefaultAsync(x => x.TodoId == id)
             ?? throw new AppException(404, "找不到該 TODO");
     }
+
+    private static TodoOwner OwnerOf(IssueTodo todo) =>
+        new(todo.IssueId, todo.ProjectId, todo.ProjectWorkItemId);
 
     private static string RequireTitle(string? title)
     {
@@ -232,6 +264,7 @@ public class TodoService(AppDbContext db)
             {
                 Id = x.TodoId,
                 IssueId = x.IssueId,
+                ProjectId = x.ProjectId,
                 ProjectWorkItemId = x.ProjectWorkItemId,
                 ParentId = x.ParentTodoId,
                 IsCompleted = x.IsCompleted,

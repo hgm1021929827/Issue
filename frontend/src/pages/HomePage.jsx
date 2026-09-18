@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookmarkPlus, CalendarDays, ClipboardList, FolderKanban, ListTodo, Sparkles } from "lucide-react";
+import { BookmarkPlus, CalendarClock, CalendarDays, ClipboardList, FolderKanban, ListTodo, Sparkles } from "lucide-react";
 import { api } from "../api.js";
 import MonthCalendar from "../components/MonthCalendar.jsx";
 import PageTitle from "../components/PageTitle.jsx";
@@ -86,6 +86,7 @@ export default function HomePage() {
   const [projects, setProjects] = useState([]);
   const [issues, setIssues] = useState([]);
   const [tracks, setTracks] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [marks, setMarks] = useState([]);
@@ -94,6 +95,7 @@ export default function HomePage() {
     projectIssue: true,
     workItem: true,
     track: true,
+    appointment: true,
     issue: true
   });
   const [pickingIssue, setPickingIssue] = useState(null);
@@ -108,11 +110,12 @@ export default function HomePage() {
     setError("");
     setLoading(true);
     try {
-      const [majorList, projectList, issueList, trackList] = await Promise.all([
+      const [majorList, projectList, issueList, trackList, appointmentList] = await Promise.all([
         api.majorCategories(),
         api.projects(filter || undefined),
         api.issues({ majorCategoryId: filter || undefined }),
-        api.homeTrackTodos()
+        api.homeTrackTodos(),
+        api.appointments()
       ]);
       const nested = await Promise.all(
         projectList.map((item) => Promise.all([api.projectItems(item.id), api.projectWorkItems(item.id)]))
@@ -125,6 +128,7 @@ export default function HomePage() {
       })));
       setIssues(issueList);
       setTracks(trackList);
+      setAppointments(appointmentList);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -191,8 +195,18 @@ export default function HomePage() {
               <BookmarkPlus size={14} strokeWidth={1.75} aria-hidden="true" />
               追蹤項目（{tracks.length}）
             </button>
+            <button
+              type="button"
+              role="tab"
+              className={tab === "appointments" ? "chip active" : "chip"}
+              aria-selected={tab === "appointments"}
+              onClick={() => setTab("appointments")}
+            >
+              <CalendarClock size={14} strokeWidth={1.75} aria-hidden="true" />
+              預約連線（{appointments.length}）
+            </button>
           </div>
-          {tab !== "tracks" && (
+          {tab !== "tracks" && tab !== "appointments" && (
             <div className="filters">
               <button className={!filter ? "chip active" : "chip"} type="button" onClick={() => setFilter("")}>
                 全部
@@ -338,6 +352,44 @@ export default function HomePage() {
                     {item.reminderDate ? (
                       <em className={dueClass(item.reminderDate)}>{formatMonthDay(item.reminderDate)}</em>
                     ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!loading && tab === "appointments" && appointments.length === 0 && (
+            <div className="empty">
+              <Sparkles className="empty-icon" size={22} strokeWidth={1.75} aria-hidden="true" />
+              <p>尚無預約連線。</p>
+              <Link className="btn" to="/appointments/new">
+                立即新增
+              </Link>
+            </div>
+          )}
+          {!loading && tab === "appointments" && appointments.length > 0 && (
+            <ul className="issue-list">
+              {appointments.map((item) => (
+                <li key={item.id} className="issue-row">
+                  <Link
+                    to={`/appointments/${item.id}`}
+                    style={{ "--accent-color": item.statusColor || undefined }}
+                  >
+                    <span className="tag">{item.statusName || "預約"}</span>
+                    <strong>
+                      {item.clientCompanyName}
+                      {item.clientContactName ? (
+                        <span className="list-vendor">
+                          {item.clientContactName}
+                          {item.contactChannelLabel ? ` · ${item.contactChannelLabel}` : ""}
+                        </span>
+                      ) : null}
+                      {item.itemSummary && item.itemSummary !== "（無處理事項）" ? (
+                        <span className="list-vendor">{item.itemSummary}</span>
+                      ) : null}
+                    </strong>
+                    <em className={dueClass(item.appointmentDate)}>
+                      {item.appointmentDate ? formatMonthDay(item.appointmentDate) : "無日期"}
+                    </em>
                   </Link>
                 </li>
               ))}

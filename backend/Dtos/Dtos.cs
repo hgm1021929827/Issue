@@ -125,6 +125,7 @@ public class TodoNodeDto
 {
     public long Id { get; set; }
     public long? IssueId { get; set; }
+    public long? ProjectId { get; set; }
     public long? ProjectWorkItemId { get; set; }
     public long? ParentId { get; set; }
     public bool IsCompleted { get; set; }
@@ -344,6 +345,7 @@ public class ClientContactListItemDto
 {
     public long Id { get; set; }
     public string Name { get; set; } = "";
+    public List<ContactChannelDto> Channels { get; set; } = [];
 }
 
 public class WorkItemDto
@@ -530,4 +532,66 @@ public class IssueImportDecisionRequestDto
     public List<IssueImportDecisionItemDto> CategoryChoices { get; set; } = [];
     public long? CountersignSubCategoryId { get; set; }
     public long? DoneSubCategoryId { get; set; }
+}
+
+public class AppointmentItemWriteDto
+{
+    public long? IssueId { get; set; }
+    public long? ProjectId { get; set; }
+    public long? TodoId { get; set; }
+}
+
+public class AppointmentWriteDto
+{
+    public long ClientCompanyId { get; set; }
+    public long ClientContactId { get; set; }
+    public long? ContactChannelId { get; set; }
+    public long? SubCategoryId { get; set; }
+    public DateOnly? AppointmentDate { get; set; }
+    public List<AppointmentItemWriteDto> Items { get; set; } = [];
+}
+
+public class AppointmentItemsWriteDto
+{
+    public List<AppointmentItemWriteDto> Items { get; set; } = [];
+}
+
+public class AppointmentItemDto
+{
+    public long Id { get; set; }
+    public string Kind { get; set; } = "";
+    public long? IssueId { get; set; }
+    public long? ProjectId { get; set; }
+    public long? TodoId { get; set; }
+    public string WorkLabel { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Content { get; set; } = "";
+    public List<TodoNodeDto> Children { get; set; } = [];
+}
+
+public class AppointmentDto
+{
+    public long Id { get; set; }
+    public long ClientCompanyId { get; set; }
+    public string ClientCompanyName { get; set; } = "";
+    public long ClientContactId { get; set; }
+    public string ClientContactName { get; set; } = "";
+    public long? ContactChannelId { get; set; }
+    public string ContactChannelLabel { get; set; } = "";
+    public long? SubCategoryId { get; set; }
+    public string StatusName { get; set; } = "";
+    public string StatusColor { get; set; } = "";
+    public DateOnly? AppointmentDate { get; set; }
+    public string ItemSummary { get; set; } = "";
+    public List<AppointmentItemDto> Items { get; set; } = [];
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class AppointmentStatusDto
+{
+    public long? MajorCategoryId { get; set; }
+    public string Name { get; set; } = "";
+    public string Color { get; set; } = "";
+    public List<SubCategoryDto> SubCategories { get; set; } = [];
 }

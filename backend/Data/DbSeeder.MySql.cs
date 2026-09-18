@@ -322,11 +322,67 @@ public static partial class DbSeeder
                         "ALTER TABLE `issue_todo` ADD KEY `ix_issue_todo_work_item` (`project_work_item_id`, `parent_todo_id`, `sort_order`)");
                     MySqlAddFkIfMissing(db, "issue_todo", "fk_issue_todo_work_item",
                         "ALTER TABLE `issue_todo` ADD CONSTRAINT `fk_issue_todo_work_item` FOREIGN KEY (`project_work_item_id`) REFERENCES `project_work_item` (`project_work_item_id`) ON DELETE CASCADE");
+                    MySqlAddColumnIfMissing(db, "issue_todo", "project_id",
+                        "ALTER TABLE `issue_todo` ADD COLUMN `project_id` BIGINT NULL");
+                    MySqlAddIndexIfMissing(db, "issue_todo", "ix_issue_todo_project",
+                        "ALTER TABLE `issue_todo` ADD KEY `ix_issue_todo_project` (`project_id`, `parent_todo_id`, `sort_order`)");
+                    MySqlAddFkIfMissing(db, "issue_todo", "fk_issue_todo_project",
+                        "ALTER TABLE `issue_todo` ADD CONSTRAINT `fk_issue_todo_project` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`) ON DELETE CASCADE");
+                    MySqlDropCheckIfExists(db, "issue_todo", "ck_issue_todo_owner");
                     MySqlAddCheckIfMissing(db, "issue_todo", "ck_issue_todo_owner", """
                         ALTER TABLE `issue_todo` ADD CONSTRAINT `ck_issue_todo_owner` CHECK (
-                          (issue_id IS NOT NULL AND project_work_item_id IS NULL)
-                          OR (issue_id IS NULL AND project_work_item_id IS NOT NULL)
+                          (issue_id IS NOT NULL AND project_id IS NULL AND project_work_item_id IS NULL)
+                          OR (issue_id IS NULL AND project_id IS NOT NULL AND project_work_item_id IS NULL)
+                          OR (issue_id IS NULL AND project_id IS NULL AND project_work_item_id IS NOT NULL)
                         )
+                        """);
+                    db.Database.ExecuteSqlRaw("""
+                        CREATE TABLE IF NOT EXISTS `connection_appointment` (
+                          `connection_appointment_id` BIGINT NOT NULL AUTO_INCREMENT,
+                          `client_company_id` BIGINT NOT NULL,
+                          `client_contact_id` BIGINT NOT NULL,
+                          `sub_category_id` BIGINT NULL,
+                          `appointment_date` DATE NULL,
+                          `created_at` DATETIME NOT NULL,
+                          `updated_at` DATETIME NOT NULL,
+                          PRIMARY KEY (`connection_appointment_id`),
+                          KEY `ix_appointment_company_date` (`client_company_id`, `appointment_date`),
+                          KEY `ix_appointment_contact` (`client_contact_id`),
+                          KEY `ix_appointment_status` (`sub_category_id`),
+                          CONSTRAINT `fk_appointment_company` FOREIGN KEY (`client_company_id`) REFERENCES `client_company` (`client_company_id`),
+                          CONSTRAINT `fk_appointment_contact` FOREIGN KEY (`client_contact_id`) REFERENCES `client_contact` (`client_contact_id`),
+                          CONSTRAINT `fk_appointment_status` FOREIGN KEY (`sub_category_id`) REFERENCES `sub_category` (`sub_category_id`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                        """);
+                    MySqlAddColumnIfMissing(db, "connection_appointment", "contact_channel_id",
+                        "ALTER TABLE `connection_appointment` ADD COLUMN `contact_channel_id` BIGINT NULL");
+                    MySqlAddIndexIfMissing(db, "connection_appointment", "ix_appointment_channel",
+                        "ALTER TABLE `connection_appointment` ADD KEY `ix_appointment_channel` (`contact_channel_id`)");
+                    MySqlAddFkIfMissing(db, "connection_appointment", "fk_appointment_channel",
+                        "ALTER TABLE `connection_appointment` ADD CONSTRAINT `fk_appointment_channel` FOREIGN KEY (`contact_channel_id`) REFERENCES `contact_channel` (`contact_channel_id`)");
+                    db.Database.ExecuteSqlRaw("""
+                        CREATE TABLE IF NOT EXISTS `connection_appointment_item` (
+                          `item_id` BIGINT NOT NULL AUTO_INCREMENT,
+                          `connection_appointment_id` BIGINT NOT NULL,
+                          `issue_id` BIGINT NULL,
+                          `project_id` BIGINT NULL,
+                          `todo_id` BIGINT NULL,
+                          `sort_order` INT NOT NULL,
+                          PRIMARY KEY (`item_id`),
+                          KEY `ix_appointment_item_appointment` (`connection_appointment_id`, `sort_order`),
+                          UNIQUE KEY `uk_appointment_item_issue` (`connection_appointment_id`, `issue_id`),
+                          UNIQUE KEY `uk_appointment_item_project` (`connection_appointment_id`, `project_id`),
+                          UNIQUE KEY `uk_appointment_item_todo` (`connection_appointment_id`, `todo_id`),
+                          CONSTRAINT `fk_appointment_item_appointment` FOREIGN KEY (`connection_appointment_id`) REFERENCES `connection_appointment` (`connection_appointment_id`) ON DELETE CASCADE,
+                          CONSTRAINT `fk_appointment_item_issue` FOREIGN KEY (`issue_id`) REFERENCES `issue` (`issue_id`),
+                          CONSTRAINT `fk_appointment_item_project` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`),
+                          CONSTRAINT `fk_appointment_item_todo` FOREIGN KEY (`todo_id`) REFERENCES `issue_todo` (`todo_id`),
+                          CONSTRAINT `ck_appointment_item_target` CHECK (
+                            (issue_id IS NOT NULL AND project_id IS NULL AND todo_id IS NULL)
+                            OR (issue_id IS NULL AND project_id IS NOT NULL AND todo_id IS NULL)
+                            OR (issue_id IS NULL AND project_id IS NULL AND todo_id IS NOT NULL)
+                          )
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                         """);
     }
 

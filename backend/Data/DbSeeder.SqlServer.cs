@@ -340,11 +340,73 @@ public static partial class DbSeeder
             "CREATE INDEX [ix_issue_todo_work_item] ON [issue_todo] ([project_work_item_id], [parent_todo_id], [sort_order])");
         SqlAddFkIfMissing(db, "fk_issue_todo_work_item",
             "ALTER TABLE [issue_todo] ADD CONSTRAINT [fk_issue_todo_work_item] FOREIGN KEY ([project_work_item_id]) REFERENCES [project_work_item] ([project_work_item_id])");
+        SqlAddColumnIfMissing(db, "issue_todo", "project_id",
+            "ALTER TABLE [issue_todo] ADD [project_id] BIGINT NULL");
+        SqlAddIndexIfMissing(db, "issue_todo", "ix_issue_todo_project",
+            "CREATE INDEX [ix_issue_todo_project] ON [issue_todo] ([project_id], [parent_todo_id], [sort_order])");
+        SqlAddFkIfMissing(db, "fk_issue_todo_project",
+            "ALTER TABLE [issue_todo] ADD CONSTRAINT [fk_issue_todo_project] FOREIGN KEY ([project_id]) REFERENCES [project] ([project_id])");
+        SqlDropCheckIfExists(db, "issue_todo", "ck_issue_todo_owner");
         SqlAddCheckIfMissing(db, "issue_todo", "ck_issue_todo_owner", """
             ALTER TABLE [issue_todo] ADD CONSTRAINT [ck_issue_todo_owner] CHECK (
-              (issue_id IS NOT NULL AND project_work_item_id IS NULL)
-              OR (issue_id IS NULL AND project_work_item_id IS NOT NULL)
+              (issue_id IS NOT NULL AND project_id IS NULL AND project_work_item_id IS NULL)
+              OR (issue_id IS NULL AND project_id IS NOT NULL AND project_work_item_id IS NULL)
+              OR (issue_id IS NULL AND project_id IS NULL AND project_work_item_id IS NOT NULL)
             )
+            """);
+        db.Database.ExecuteSqlRaw("""
+            IF OBJECT_ID(N'dbo.connection_appointment', N'U') IS NULL
+            BEGIN
+              CREATE TABLE [connection_appointment] (
+                [connection_appointment_id] BIGINT NOT NULL IDENTITY(1,1),
+                [client_company_id] BIGINT NOT NULL,
+                [client_contact_id] BIGINT NOT NULL,
+                [sub_category_id] BIGINT NULL,
+                [appointment_date] DATE NULL,
+                [created_at] DATETIME2 NOT NULL,
+                [updated_at] DATETIME2 NOT NULL,
+                CONSTRAINT [PK_connection_appointment] PRIMARY KEY ([connection_appointment_id]),
+                CONSTRAINT [fk_appointment_company] FOREIGN KEY ([client_company_id]) REFERENCES [client_company] ([client_company_id]),
+                CONSTRAINT [fk_appointment_contact] FOREIGN KEY ([client_contact_id]) REFERENCES [client_contact] ([client_contact_id]),
+                CONSTRAINT [fk_appointment_status] FOREIGN KEY ([sub_category_id]) REFERENCES [sub_category] ([sub_category_id])
+              );
+              CREATE INDEX [ix_appointment_company_date] ON [connection_appointment] ([client_company_id], [appointment_date]);
+              CREATE INDEX [ix_appointment_contact] ON [connection_appointment] ([client_contact_id]);
+              CREATE INDEX [ix_appointment_status] ON [connection_appointment] ([sub_category_id]);
+            END
+            """);
+        SqlAddColumnIfMissing(db, "connection_appointment", "contact_channel_id",
+            "ALTER TABLE [connection_appointment] ADD [contact_channel_id] BIGINT NULL");
+        SqlAddIndexIfMissing(db, "connection_appointment", "ix_appointment_channel",
+            "CREATE INDEX [ix_appointment_channel] ON [connection_appointment] ([contact_channel_id])");
+        SqlAddFkIfMissing(db, "fk_appointment_channel",
+            "ALTER TABLE [connection_appointment] ADD CONSTRAINT [fk_appointment_channel] FOREIGN KEY ([contact_channel_id]) REFERENCES [contact_channel] ([contact_channel_id])");
+        db.Database.ExecuteSqlRaw("""
+            IF OBJECT_ID(N'dbo.connection_appointment_item', N'U') IS NULL
+            BEGIN
+              CREATE TABLE [connection_appointment_item] (
+                [item_id] BIGINT NOT NULL IDENTITY(1,1),
+                [connection_appointment_id] BIGINT NOT NULL,
+                [issue_id] BIGINT NULL,
+                [project_id] BIGINT NULL,
+                [todo_id] BIGINT NULL,
+                [sort_order] INT NOT NULL,
+                CONSTRAINT [PK_connection_appointment_item] PRIMARY KEY ([item_id]),
+                CONSTRAINT [fk_appointment_item_appointment] FOREIGN KEY ([connection_appointment_id]) REFERENCES [connection_appointment] ([connection_appointment_id]) ON DELETE CASCADE,
+                CONSTRAINT [fk_appointment_item_issue] FOREIGN KEY ([issue_id]) REFERENCES [issue] ([issue_id]),
+                CONSTRAINT [fk_appointment_item_project] FOREIGN KEY ([project_id]) REFERENCES [project] ([project_id]),
+                CONSTRAINT [fk_appointment_item_todo] FOREIGN KEY ([todo_id]) REFERENCES [issue_todo] ([todo_id]),
+                CONSTRAINT [ck_appointment_item_target] CHECK (
+                  (issue_id IS NOT NULL AND project_id IS NULL AND todo_id IS NULL)
+                  OR (issue_id IS NULL AND project_id IS NOT NULL AND todo_id IS NULL)
+                  OR (issue_id IS NULL AND project_id IS NULL AND todo_id IS NOT NULL)
+                )
+              );
+              CREATE INDEX [ix_appointment_item_appointment] ON [connection_appointment_item] ([connection_appointment_id], [sort_order]);
+              CREATE UNIQUE INDEX [uk_appointment_item_issue] ON [connection_appointment_item] ([connection_appointment_id], [issue_id]) WHERE [issue_id] IS NOT NULL;
+              CREATE UNIQUE INDEX [uk_appointment_item_project] ON [connection_appointment_item] ([connection_appointment_id], [project_id]) WHERE [project_id] IS NOT NULL;
+              CREATE UNIQUE INDEX [uk_appointment_item_todo] ON [connection_appointment_item] ([connection_appointment_id], [todo_id]) WHERE [todo_id] IS NOT NULL;
+            END
             """);
     }
 

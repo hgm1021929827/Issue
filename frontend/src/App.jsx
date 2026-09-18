@@ -1,5 +1,5 @@
 import { NavLink, Route, Routes } from "react-router-dom";
-import { ClipboardList, FolderCog, FolderKanban, Home, Sparkles, Users } from "lucide-react";
+import { CalendarClock, ClipboardList, FolderCog, FolderKanban, Home, Sparkles, Users } from "lucide-react";
 import HomePage from "./pages/HomePage.jsx";
 import IssueListPage from "./pages/IssueListPage.jsx";
 import IssuePage from "./pages/IssuePage.jsx";
@@ -9,6 +9,8 @@ import ProjectListPage from "./pages/ProjectListPage.jsx";
 import ProjectPage from "./pages/ProjectPage.jsx";
 import ImportResultPage from "./pages/ImportResultPage.jsx";
 import MembersPage from "./pages/MembersPage.jsx";
+import AppointmentListPage from "./pages/AppointmentListPage.jsx";
+import AppointmentPage from "./pages/AppointmentPage.jsx";
 
 export default function App() {
   return (
@@ -30,6 +32,10 @@ export default function App() {
           <NavLink to="/projects">
             <FolderKanban size={16} strokeWidth={1.75} aria-hidden="true" />
             專案
+          </NavLink>
+          <NavLink to="/appointments">
+            <CalendarClock size={16} strokeWidth={1.75} aria-hidden="true" />
+            預約連線
           </NavLink>
           <NavLink to="/members">
             <Users size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -54,6 +60,9 @@ export default function App() {
           <Route path="/projects/new" element={<ProjectPage />} />
           <Route path="/projects/:id/import-result" element={<ImportResultPage />} />
           <Route path="/projects/:id" element={<ProjectPage />} />
+          <Route path="/appointments" element={<AppointmentListPage />} />
+          <Route path="/appointments/new" element={<AppointmentPage />} />
+          <Route path="/appointments/:id" element={<AppointmentPage />} />
         </Routes>
       </main>
     </div>

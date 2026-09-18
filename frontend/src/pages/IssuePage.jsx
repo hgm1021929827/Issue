@@ -42,6 +42,7 @@ export default function IssuePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightTrackId = searchParams.get("trackTodo");
+  const highlightTodoId = searchParams.get("todo");
   const [subs, setSubs] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [todos, setTodos] = useState([]);
@@ -296,6 +297,24 @@ export default function IssuePage() {
         </div>
       </form>
       {!isNew && (
+        <div className="btn-row" style={{ margin: "0 0 1rem" }}>
+          <button
+            className="btn"
+            type="button"
+            disabled={!form.clientCompanyId}
+            onClick={() => {
+              if (!form.clientCompanyId) {
+                setError("請先設定廠商");
+                return;
+              }
+              navigate(`/appointments/new?issue=${id}`);
+            }}
+          >
+            新增預約連線
+          </button>
+        </div>
+      )}
+      {!isNew && (
         <WorkHourTable
           hours={hours}
           hoursTotal={hoursTotal}
@@ -328,6 +347,7 @@ export default function IssuePage() {
           onChange={setTodos}
           onError={setError}
           create={(payload) => api.createTodo(id, payload)}
+          highlightId={highlightTodoId}
         />
       )}
       <AppDialog

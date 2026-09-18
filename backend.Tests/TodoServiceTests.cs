@@ -172,6 +172,34 @@ public class TodoServiceTests
         Assert.Empty(db.IssueTodos.Where(x => x.ProjectWorkItemId == 20));
     }
 
+    [Fact]
+    public async Task Project_tree_completes_parent_and_deleting_project_removes_todos()
+    {
+        await using var db = CreateDb();
+        SeedWorkItem(db);
+        var svc = new TodoService(db);
+        await svc.CreateForProjectAsync(10, new TodoWriteDto { Title = "父", Content = "專案說明" });
+        var parentId = (await svc.GetTreeForProjectAsync(10))[0].Id;
+        await svc.CreateForProjectAsync(10, new TodoWriteDto { ParentId = parentId, Title = "子" });
+        var tree = await svc.GetTreeForProjectAsync(10);
+        Assert.Equal(10, tree[0].ProjectId);
+        Assert.Null(tree[0].IssueId);
+        Assert.Equal("專案說明", tree[0].Content);
+        var childId = tree[0].Children[0].Id;
+        await svc.SetCompletedAsync(childId, true);
+        tree = await svc.GetTreeForProjectAsync(10);
+        Assert.True(tree[0].IsCompleted);
+
+        var issueTodo = await svc.CreateAsync(1, new TodoWriteDto { Title = "議題待辦" });
+        var ex = await Assert.ThrowsAsync<AppException>(() =>
+            svc.CreateForProjectAsync(10, new TodoWriteDto { ParentId = issueTodo[0].Id, Title = "誤掛" }));
+        Assert.Equal(400, ex.StatusCode);
+
+        var projects = new ProjectService(db);
+        await projects.DeleteAsync(10);
+        Assert.Empty(db.IssueTodos.Where(x => x.ProjectId == 10));
+    }
+
     private static void SeedWorkItem(AppDbContext db)
     {
         db.Projects.Add(new Project

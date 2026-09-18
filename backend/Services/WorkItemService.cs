@@ -66,6 +66,9 @@ public class WorkItemService(AppDbContext db)
     public async Task DeleteAsync(long projectId, long id)
     {
         var row = await Load(projectId, id);
+        var todoIds = db.IssueTodos.Where(x => x.ProjectWorkItemId == id).Select(x => x.TodoId).ToList();
+        db.ConnectionAppointmentItems.RemoveRange(
+            db.ConnectionAppointmentItems.Where(x => x.TodoId != null && todoIds.Contains(x.TodoId.Value)));
         db.IssueTodos.RemoveRange(db.IssueTodos.Where(x => x.ProjectWorkItemId == id));
         db.TrackTodos.RemoveRange(db.TrackTodos.Where(x => x.ProjectWorkItemId == id));
         db.WorkHours.RemoveRange(db.WorkHours.Where(x => x.ProjectWorkItemId == id));

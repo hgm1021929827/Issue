@@ -79,7 +79,9 @@ public class CategoryService(AppDbContext db)
         var used = await CountUsageAsync(
             issueCount: () => db.Issues.CountAsync(x => x.MajorCategoryId == id),
             projectCount: () => db.Projects.CountAsync(x => x.MajorCategoryId == id),
-            projectIssueCount: () => db.ProjectIssues.CountAsync(x => x.MajorCategoryId == id));
+            projectIssueCount: () => db.ProjectIssues.CountAsync(x => x.MajorCategoryId == id),
+            appointmentCount: () => db.ConnectionAppointments.CountAsync(x =>
+                x.SubCategoryId != null && db.SubCategories.Any(s => s.SubCategoryId == x.SubCategoryId && s.MajorCategoryId == id)));
         if (used is not null)
         {
             throw new AppException(409, used);
@@ -141,7 +143,8 @@ public class CategoryService(AppDbContext db)
         var used = await CountUsageAsync(
             issueCount: () => db.Issues.CountAsync(x => x.SubCategoryId == id),
             projectCount: () => db.Projects.CountAsync(x => x.SubCategoryId == id),
-            projectIssueCount: () => db.ProjectIssues.CountAsync(x => x.SubCategoryId == id));
+            projectIssueCount: () => db.ProjectIssues.CountAsync(x => x.SubCategoryId == id),
+            appointmentCount: () => db.ConnectionAppointments.CountAsync(x => x.SubCategoryId == id));
         if (used is not null)
         {
             throw new AppException(409, used);
@@ -209,12 +212,14 @@ public class CategoryService(AppDbContext db)
     private static async Task<string?> CountUsageAsync(
         Func<Task<int>> issueCount,
         Func<Task<int>> projectCount,
-        Func<Task<int>> projectIssueCount)
+        Func<Task<int>> projectIssueCount,
+        Func<Task<int>> appointmentCount)
     {
         var issues = await issueCount();
         var projects = await projectCount();
         var items = await projectIssueCount();
-        if (issues + projects + items == 0)
+        var appointments = await appointmentCount();
+        if (issues + projects + items + appointments == 0)
         {
             return null;
         }
@@ -222,6 +227,7 @@ public class CategoryService(AppDbContext db)
         if (issues > 0) parts.Add($"{issues} 筆正式議題");
         if (projects > 0) parts.Add($"{projects} 筆專案");
         if (items > 0) parts.Add($"{items} 筆專案議題");
+        if (appointments > 0) parts.Add($"{appointments} 筆預約連線");
         return "使用中，共 " + string.Join("、", parts);
     }
 }

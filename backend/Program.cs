@@ -16,6 +16,7 @@ builder.Services.AddScoped<WorkItemService>();
 builder.Services.AddScoped<WorkHourService>();
 builder.Services.AddScoped<ProjectImportService>();
 builder.Services.AddScoped<IssueImportService>();
+builder.Services.AddScoped<AppointmentService>();
 builder.Services.AddSingleton<ImportNotFoundCache>();
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>

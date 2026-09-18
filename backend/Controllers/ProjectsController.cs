@@ -146,6 +146,14 @@ public class ProjectsController(
     public async Task<IActionResult> AddWorkItemTodo(long projectId, long id, [FromBody] TodoWriteDto input) =>
         OkData(await todos.CreateForWorkItemAsync(projectId, id, input));
 
+    [HttpGet("/projects/{projectId:long}/todos")]
+    public async Task<IActionResult> ListProjectTodos(long projectId) =>
+        OkData(await todos.GetTreeForProjectAsync(projectId));
+
+    [HttpPost("/projects/{projectId:long}/todos")]
+    public async Task<IActionResult> AddProjectTodo(long projectId, [FromBody] TodoWriteDto input) =>
+        OkData(await todos.CreateForProjectAsync(projectId, input));
+
     [HttpPost("/project-imports/resolve-project")]
     [RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> ResolveImport([FromForm] IFormFile? file) =>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookmarkPlus, CalendarCheck, CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardList, FolderKanban, ListTodo, X } from "lucide-react";
+import { BookmarkPlus, CalendarCheck, CalendarClock, CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardList, FolderKanban, ListTodo, X } from "lucide-react";
 import PageTitle from "./PageTitle.jsx";
 import AppDateField from "./AppDateField.jsx";
 
@@ -19,6 +19,7 @@ function markPath(item) {
     if (item.workType === "workItem") return `/projects/${item.projectId}?workItem=${item.workId}&trackTodo=${item.id}`;
     return `/issues/${item.workId}?trackTodo=${item.id}`;
   }
+  if (item.source === "appointment") return `/appointments/${item.id}`;
   if (item.source === "project") return `/projects/${item.id}`;
   if (item.source === "projectIssue") return `/projects/${item.projectId}?item=${item.id}`;
   if (item.source === "workItem") return `/projects/${item.projectId}?workItem=${item.id}`;
@@ -57,6 +58,9 @@ function markLabel(item) {
   if (item.source === "trackTodo") {
     return [personName(item.content), clipText(item.title, 6)].filter(Boolean).join(" ");
   }
+  if (item.source === "appointment") {
+    return [clipText(item.title, 6), clipText(item.label, 4)].filter(Boolean).join(" ");
+  }
   return [`#${item.issueNo || item.id}`, clipText(item.title, 6)].filter(Boolean).join(" ");
 }
 
@@ -70,11 +74,15 @@ function markHover(item) {
   if (item.source === "trackTodo") {
     return [item.title, item.label, item.content].filter(Boolean).join(" · ");
   }
+  if (item.source === "appointment") {
+    return [item.title, item.content, item.label].filter(Boolean).join(" · ");
+  }
   return [`#${item.issueNo || item.id}`, item.title].filter(Boolean).join(" ");
 }
 
 function markAria(item) {
   if (item.source === "trackTodo") return `追蹤 ${markHover(item)}`;
+  if (item.source === "appointment") return `預約 ${markHover(item)}`;
   if (item.source === "project") return `專案 ${markHover(item)}`;
   if (item.source === "projectIssue") return `專案議題 ${markHover(item)}`;
   if (item.source === "workItem") return `工作項次 ${markHover(item)}`;
@@ -87,6 +95,7 @@ function markVisible(item, views) {
   if (source === "projectIssue") return views.projectIssue;
   if (source === "workItem") return views.workItem;
   if (source === "trackTodo") return views.track;
+  if (source === "appointment") return views.appointment;
   return views.issue;
 }
 
@@ -261,6 +270,16 @@ export default function MonthCalendar({
         </button>
         <button
           type="button"
+          className={`cal-view is-appointment${views.appointment ? " is-on" : ""}`}
+          aria-pressed={views.appointment}
+          onClick={() => onToggleView("appointment")}
+        >
+          <CalendarClock size={18} strokeWidth={1.9} aria-hidden="true" />
+          預約連線
+          {views.appointment && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
+        </button>
+        <button
+          type="button"
           className={`cal-view is-issue${views.issue ? " is-on" : ""}`}
           aria-pressed={views.issue}
           onClick={() => onToggleView("issue")}
@@ -315,7 +334,7 @@ export default function MonthCalendar({
           </div>
         </div>
       )}
-      {!views.project && !views.projectIssue && !views.workItem && !views.track && !views.issue && (
+      {!views.project && !views.projectIssue && !views.workItem && !views.track && !views.appointment && !views.issue && (
         <p className="muted">請至少選擇一種視角。</p>
       )}
       <div className="cal-grid head">
